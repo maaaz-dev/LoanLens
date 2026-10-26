@@ -22,8 +22,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Endpoint for submitting loan applications, persisting them in Oracle,
- * invoking risk prediction (mock provider), and returning structured results.
+ * Endpoint for submitting loan applications, persisting them in repository,
+ * invoking risk prediction, and returning structured results.
  */
 @WebServlet(name = "LoanApplicationServlet", urlPatterns = {"/api/applications"})
 public class LoanApplicationServlet extends HttpServlet {
@@ -95,6 +95,7 @@ public class LoanApplicationServlet extends HttpServlet {
             app.setAccCurrentBalance(new BigDecimal(curBal.trim()));
         }
 
+        // Optional demographic fields (null by default in v2.0)
         app.setInfMaritalStatus(getParam(p, "INF_MARITAL_STATUS", "infMaritalStatus"));
         app.setInfGender(getParam(p, "INF_GENDER", "infGender"));
 
@@ -149,7 +150,7 @@ public class LoanApplicationServlet extends HttpServlet {
             case VALIDATION_FAILED:
                 Map<String, Object> valErr = new LinkedHashMap<>();
                 valErr.put("status", "VALIDATION_FAILED");
-                valErr.put("message", "Input validation failed. Please check the nine required features.");
+                valErr.put("message", "Input validation failed. Please check the seven required features.");
                 valErr.put("errors", result.getValidationResult().getErrors());
                 sendJsonResponse(resp, HttpServletResponse.SC_BAD_REQUEST, valErr);
                 break;

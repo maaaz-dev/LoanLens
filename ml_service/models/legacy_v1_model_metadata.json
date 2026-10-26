@@ -1,0 +1,65 @@
+{
+  "model_version": "v1.0",
+  "selected_model": "XGBoost",
+  "selection_metric": "validation_ROC_AUC",
+  "positive_class": "B",
+  "negative_class": "G",
+  "threshold": 0.4049999999999999,
+  "threshold_metrics_on_validation": {
+    "precision": 0.19934052757793766,
+    "recall": 0.8002406738868832,
+    "f1": 0.3191744660427166
+  },
+  "input_features": [
+    "INVESTMENT_TOTAL",
+    "ACCCURRENTBALANCE",
+    "INF_MARITAL_STATUS",
+    "INF_GENDER",
+    "INSTALL_SIZE",
+    "DUE_PAYMENT",
+    "COMPENSATION_CHARGED",
+    "CLIENT_TYPE",
+    "REPAY_MODE"
+  ],
+  "validation_metrics_at_0_5": [
+    {
+      "Model": "Logistic Regression",
+      "ROC_AUC": 0.6781156837702174,
+      "PR_AUC": 0.19307569786838924,
+      "Precision": 0.17166979362101314,
+      "Recall": 0.6606498194945848,
+      "F1": 0.27252419955323903,
+      "Brier_Score": 0.23025183327759577
+    },
+    {
+      "Model": "Random Forest",
+      "ROC_AUC": 0.7405298661240196,
+      "PR_AUC": 0.3073967340001648,
+      "Precision": 0.18968331700946783,
+      "Recall": 0.6991576413959085,
+      "F1": 0.29840780688238316,
+      "Brier_Score": 0.2083729717576064
+    },
+    {
+      "Model": "XGBoost",
+      "ROC_AUC": 0.7859606356526284,
+      "PR_AUC": 0.3857817435175687,
+      "Precision": 0.2402111746590409,
+      "Recall": 0.6570397111913358,
+      "F1": 0.35180412371134023,
+      "Brier_Score": 0.16818515956401825
+    },
+    {
+      "Model": "LightGBM",
+      "ROC_AUC": 0.7814815176676019,
+      "PR_AUC": 0.3804426628856277,
+      "Precision": 0.2367066895368782,
+      "Recall": 0.6642599277978339,
+      "F1": 0.34903572557698387,
+      "Brier_Score": 0.17206520711053788
+    }
+  ],
+  "training_rows": 37408,
+  "validation_rows": 7482,
+  "report_file": "model_comparison_validation.csv"
+}

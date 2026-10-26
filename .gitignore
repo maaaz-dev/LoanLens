@@ -62,3 +62,8 @@ ehthumbs.db
 [Dd]esktop.ini
 
 # Note: ML model artifacts (.joblib, .pkl) are NOT blanket-ignored per project policy.
+
+# ML service local environment and datasets
+ml_service/.venv/
+ml_service/**/__pycache__/
+ml_service/data/

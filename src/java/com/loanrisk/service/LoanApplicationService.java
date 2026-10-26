@@ -57,7 +57,8 @@ public class LoanApplicationService {
     }
 
     /**
-     * Validates the nine required input features according to schema boundaries.
+     * Validates the seven required input features according to schema boundaries.
+     * Demographic features are optional and ignored for risk scoring.
      * Categorical values are checked for presence and supported length without
      * inventing synthetic allowed-value constraints.
      */
@@ -69,7 +70,7 @@ public class LoanApplicationService {
             return result;
         }
 
-        // 1. INVESTMENT_TOTAL: numeric > 0
+        // 1. INVESTMENT_TOTAL: numeric > 0 (loan principal must be strictly positive)
         if (app.getInvestmentTotal() == null) {
             result.addError("INVESTMENT_TOTAL", "INVESTMENT_TOTAL is required.");
         } else if (app.getInvestmentTotal().compareTo(BigDecimal.ZERO) <= 0) {
@@ -81,49 +82,35 @@ public class LoanApplicationService {
             result.addError("ACCCURRENTBALANCE", "ACCCURRENTBALANCE is required.");
         }
 
-        // 3. INF_MARITAL_STATUS: categorical (VARCHAR2 30)
-        if (app.getInfMaritalStatus() == null || app.getInfMaritalStatus().trim().isEmpty()) {
-            result.addError("INF_MARITAL_STATUS", "INF_MARITAL_STATUS is required.");
-        } else if (app.getInfMaritalStatus().trim().length() > 30) {
-            result.addError("INF_MARITAL_STATUS", "INF_MARITAL_STATUS exceeds maximum supported length (30).");
-        }
-
-        // 4. INF_GENDER: categorical (VARCHAR2 10)
-        if (app.getInfGender() == null || app.getInfGender().trim().isEmpty()) {
-            result.addError("INF_GENDER", "INF_GENDER is required.");
-        } else if (app.getInfGender().trim().length() > 10) {
-            result.addError("INF_GENDER", "INF_GENDER exceeds maximum supported length (10).");
-        }
-
-        // 5. INSTALL_SIZE: numeric > 0
+        // 3. INSTALL_SIZE: numeric >= 0 (zero installment size is valid for Normal repayment schedule, representing 81.34% of training data)
         if (app.getInstallSize() == null) {
             result.addError("INSTALL_SIZE", "INSTALL_SIZE is required.");
-        } else if (app.getInstallSize().compareTo(BigDecimal.ZERO) <= 0) {
-            result.addError("INSTALL_SIZE", "INSTALL_SIZE must be greater than zero.");
+        } else if (app.getInstallSize().compareTo(BigDecimal.ZERO) < 0) {
+            result.addError("INSTALL_SIZE", "INSTALL_SIZE cannot be negative.");
         }
 
-        // 6. DUE_PAYMENT: numeric >= 0
+        // 4. DUE_PAYMENT: numeric >= 0
         if (app.getDuePayment() == null) {
             result.addError("DUE_PAYMENT", "DUE_PAYMENT is required.");
         } else if (app.getDuePayment().compareTo(BigDecimal.ZERO) < 0) {
             result.addError("DUE_PAYMENT", "DUE_PAYMENT cannot be negative.");
         }
 
-        // 7. COMPENSATION_CHARGED: categorical (VARCHAR2 30)
+        // 5. COMPENSATION_CHARGED: categorical (VARCHAR2 30)
         if (app.getCompensationCharged() == null || app.getCompensationCharged().trim().isEmpty()) {
             result.addError("COMPENSATION_CHARGED", "COMPENSATION_CHARGED is required.");
         } else if (app.getCompensationCharged().trim().length() > 30) {
             result.addError("COMPENSATION_CHARGED", "COMPENSATION_CHARGED exceeds maximum supported length (30).");
         }
 
-        // 8. CLIENT_TYPE: categorical (VARCHAR2 30)
+        // 6. CLIENT_TYPE: categorical (VARCHAR2 30)
         if (app.getClientType() == null || app.getClientType().trim().isEmpty()) {
             result.addError("CLIENT_TYPE", "CLIENT_TYPE is required.");
         } else if (app.getClientType().trim().length() > 30) {
             result.addError("CLIENT_TYPE", "CLIENT_TYPE exceeds maximum supported length (30).");
         }
 
-        // 9. REPAY_MODE: categorical (VARCHAR2 30)
+        // 7. REPAY_MODE: categorical (VARCHAR2 30)
         if (app.getRepayMode() == null || app.getRepayMode().trim().isEmpty()) {
             result.addError("REPAY_MODE", "REPAY_MODE is required.");
         } else if (app.getRepayMode().trim().length() > 30) {

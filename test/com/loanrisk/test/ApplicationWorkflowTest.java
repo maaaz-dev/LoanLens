@@ -28,6 +28,7 @@ public class ApplicationWorkflowTest {
         testSuccessfulApplicationSubmissionInMemoryMode();
         testApplicationAndPredictionAssociation();
         testInvalidInputRejection();
+        testInstallSizeZeroAllowedAndNegativeRejected();
         testPredictionProviderFailureHandling();
         testPredictionPersistenceFailureHandling();
         testDistinctionBetweenSimulatedAndGenuineOutput();
@@ -37,13 +38,11 @@ public class ApplicationWorkflowTest {
         LoanApplication app = new LoanApplication();
         app.setInvestmentTotal(new BigDecimal("75000.00"));
         app.setAccCurrentBalance(new BigDecimal("18500.00"));
-        app.setInfMaritalStatus("Married");
-        app.setInfGender("M");
         app.setInstallSize(new BigDecimal("2100.00"));
         app.setDuePayment(new BigDecimal("0.00"));
         app.setCompensationCharged("None");
-        app.setClientType("Individual");
-        app.setRepayMode("Monthly");
+        app.setClientType("Urban");
+        app.setRepayMode("Normal");
         return app;
     }
 
@@ -106,6 +105,27 @@ public class ApplicationWorkflowTest {
         ApplicationProcessingResult result = service.processApplication(app);
         assertEquals(ApplicationProcessingResult.Status.VALIDATION_FAILED, result.getStatus(), "Returns VALIDATION_FAILED");
         System.out.println("  [PASS] testInvalidInputRejection");
+    }
+
+    private static void testInstallSizeZeroAllowedAndNegativeRejected() {
+        LoanApplicationService service = new LoanApplicationService(
+                new InMemoryLoanApplicationRepository(),
+                new InMemoryPredictionRecordRepository(),
+                new MockPredictionProvider());
+
+        // Zero installment is valid (represents Normal schedule in dataset)
+        LoanApplication validZeroApp = createValidApplication();
+        validZeroApp.setInstallSize(BigDecimal.ZERO);
+        ValidationResult valZero = service.validate(validZeroApp);
+        assertTrue(!valZero.hasErrors(), "INSTALL_SIZE = 0 must be accepted as valid");
+
+        // Negative installment must be rejected
+        LoanApplication negApp = createValidApplication();
+        negApp.setInstallSize(new BigDecimal("-150.00"));
+        ValidationResult valNeg = service.validate(negApp);
+        assertTrue(valNeg.hasErrors(), "Negative INSTALL_SIZE must produce validation error");
+        assertTrue(valNeg.getErrors().containsKey("INSTALL_SIZE"), "Validation error on INSTALL_SIZE");
+        System.out.println("  [PASS] testInstallSizeZeroAllowedAndNegativeRejected");
     }
 
     private static void testPredictionProviderFailureHandling() {

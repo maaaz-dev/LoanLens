@@ -1,0 +1,93 @@
+{
+  "model_version": "v2.0",
+  "selected_model": "LightGBM",
+  "selection_metric": "validation_ROC_AUC",
+  "positive_class": "B",
+  "negative_class": "G",
+  "threshold": 0.41999999999999993,
+  "threshold_metrics_on_validation": {
+    "threshold": 0.41999999999999993,
+    "accuracy": 0.6337877572841486,
+    "precision": 0.20531028095091078,
+    "recall": 0.8002406738868832,
+    "f1": 0.32678132678132676,
+    "roc_auc": 0.7806505938775617,
+    "pr_auc": 0.3667533936892092,
+    "brier_score": 0.17315498728283485,
+    "confusion_matrix": {
+      "true_negatives_G": 4077,
+      "false_positives_B": 2574,
+      "false_negatives_G": 166,
+      "true_positives_B": 665
+    }
+  },
+  "input_features": [
+    "INVESTMENT_TOTAL",
+    "ACCCURRENTBALANCE",
+    "INSTALL_SIZE",
+    "DUE_PAYMENT",
+    "COMPENSATION_CHARGED",
+    "CLIENT_TYPE",
+    "REPAY_MODE"
+  ],
+  "numeric_features": [
+    "INVESTMENT_TOTAL",
+    "ACCCURRENTBALANCE",
+    "INSTALL_SIZE",
+    "DUE_PAYMENT"
+  ],
+  "categorical_features": [
+    "COMPENSATION_CHARGED",
+    "CLIENT_TYPE",
+    "REPAY_MODE"
+  ],
+  "excluded_features": [
+    "INF_GENDER",
+    "INF_MARITAL_STATUS"
+  ],
+  "validation_metrics_at_0_5": [
+    {
+      "Model": "Logistic Regression",
+      "ROC_AUC": 0.6719752609969167,
+      "PR_AUC": 0.18660786436644256,
+      "Accuracy": 0.6065223202352312,
+      "Precision": 0.1709747742136406,
+      "Recall": 0.6606498194945848,
+      "F1": 0.27164769915883225,
+      "Brier_Score": 0.2304432455283272
+    },
+    {
+      "Model": "Random Forest",
+      "ROC_AUC": 0.7385119471190511,
+      "PR_AUC": 0.29612816110026485,
+      "Accuracy": 0.6312483293237102,
+      "Precision": 0.18822768434670117,
+      "Recall": 0.7003610108303249,
+      "F1": 0.2967117002294163,
+      "Brier_Score": 0.2092192430868156
+    },
+    {
+      "Model": "XGBoost",
+      "ROC_AUC": 0.7794295837094428,
+      "PR_AUC": 0.36161175095057607,
+      "Accuracy": 0.7296177492649024,
+      "Precision": 0.2399650959860384,
+      "Recall": 0.6618531889290012,
+      "F1": 0.3522254242715338,
+      "Brier_Score": 0.17154040932655334
+    },
+    {
+      "Model": "LightGBM",
+      "ROC_AUC": 0.7806505938775617,
+      "PR_AUC": 0.3667533936892092,
+      "Accuracy": 0.7185244587008821,
+      "Precision": 0.23382045929018788,
+      "Recall": 0.6738868832731648,
+      "F1": 0.347179169249845,
+      "Brier_Score": 0.17315498728283485
+    }
+  ],
+  "training_rows": 37408,
+  "validation_rows": 7482,
+  "report_file": "model_comparison_validation.csv"
+}

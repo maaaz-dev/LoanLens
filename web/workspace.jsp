@@ -116,7 +116,7 @@
             <div class="card-header-clean">
                 <div>
                     <h2 class="card-title">Loan Applicant Evaluation Form</h2>
-                    <p class="card-subtitle">Submit the nine required applicant features to persist the application and receive model prediction output.</p>
+                    <p class="card-subtitle">Submit the seven required financial and loan parameters to persist the application and receive model prediction output.</p>
                 </div>
             </div>
 
@@ -165,12 +165,12 @@
 
                         <div class="form-group">
                             <label for="installSize">Installment Size <span class="req">*</span></label>
-                            <span class="field-hint">Feature: <code>INSTALL_SIZE</code> (Numeric &gt; 0)</span>
+                            <span class="field-hint">Feature: <code>INSTALL_SIZE</code> (Numeric &ge; 0)</span>
                             <div class="input-wrapper">
                                 <span class="input-affix">$</span>
-                                <input type="number" id="installSize" class="form-control" placeholder="1200.00" step="0.01" min="0.01" required>
+                                <input type="number" id="installSize" class="form-control" placeholder="1200.00" step="0.01" min="0" required>
                             </div>
-                            <div id="installSizeFeedback" class="invalid-feedback">Please enter a valid installment size.</div>
+                            <div id="installSizeFeedback" class="invalid-feedback">Please enter a valid non-negative installment size.</div>
                         </div>
 
                         <div class="form-group">
@@ -185,11 +185,11 @@
                     </div>
                 </div>
 
-                <!-- Section 2: Categorical & Applicant Details -->
+                <!-- Section 2: Loan & Branch Parameters -->
                 <div class="form-section">
                     <div class="form-section-header">
                         <span class="section-badge">02</span>
-                        <span class="form-section-title">Categorical &amp; Applicant Details</span>
+                        <span class="form-section-title">Loan &amp; Branch Parameters</span>
                     </div>
                     <p class="section-note">
                         * Categorical values are preserved as raw strings to match model training without synthetic encoding discrepancies.
@@ -197,38 +197,24 @@
 
                     <div class="form-grid form-grid-2">
                         <div class="form-group">
-                            <label for="infMaritalStatus">Marital Status <span class="req">*</span></label>
-                            <span class="field-hint">Feature: <code>INF_MARITAL_STATUS</code> (Max 30 chars)</span>
-                            <input type="text" id="infMaritalStatus" class="form-control" placeholder="e.g. Married, Single, Divorced" maxlength="30" required>
-                            <div id="infMaritalStatusFeedback" class="invalid-feedback">Marital status is required.</div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="infGender">Gender <span class="req">*</span></label>
-                            <span class="field-hint">Feature: <code>INF_GENDER</code> (Max 10 chars)</span>
-                            <input type="text" id="infGender" class="form-control" placeholder="e.g. M, F" maxlength="10" required>
-                            <div id="infGenderFeedback" class="invalid-feedback">Gender is required.</div>
-                        </div>
-
-                        <div class="form-group">
                             <label for="compensationCharged">Compensation Charged <span class="req">*</span></label>
-                            <span class="field-hint">Feature: <code>COMPENSATION_CHARGED</code> (Max 30)</span>
-                            <input type="text" id="compensationCharged" class="form-control" placeholder="e.g. None, Waived, Charged" maxlength="30" required>
+                            <span class="field-hint">Feature: <code>COMPENSATION_CHARGED</code> (e.g. None, Penalty Charged)</span>
+                            <input type="text" id="compensationCharged" class="form-control" placeholder="e.g. None" maxlength="30" required>
                             <div id="compensationChargedFeedback" class="invalid-feedback">Compensation status is required.</div>
                         </div>
 
                         <div class="form-group">
-                            <label for="clientType">Client Type <span class="req">*</span></label>
-                            <span class="field-hint">Feature: <code>CLIENT_TYPE</code> (Max 30 chars)</span>
-                            <input type="text" id="clientType" class="form-control" placeholder="e.g. Individual, Corporate" maxlength="30" required>
-                            <div id="clientTypeFeedback" class="invalid-feedback">Client type is required.</div>
+                            <label for="clientType">Branch Area Category (Client Type) <span class="req">*</span></label>
+                            <span class="field-hint">Feature: <code>CLIENT_TYPE</code> (Rural, Semi-urban, Urban)</span>
+                            <input type="text" id="clientType" class="form-control" placeholder="e.g. Urban, Semi-urban, Rural" maxlength="30" required>
+                            <div id="clientTypeFeedback" class="invalid-feedback">Branch area category is required.</div>
                         </div>
 
                         <div class="form-group full-span">
-                            <label for="repayMode">Repayment Mode <span class="req">*</span></label>
-                            <span class="field-hint">Feature: <code>REPAY_MODE</code> (Max 30 chars)</span>
-                            <input type="text" id="repayMode" class="form-control" placeholder="e.g. Monthly, Quarterly, Bullet" maxlength="30" required>
-                            <div id="repayModeFeedback" class="invalid-feedback">Repayment mode is required.</div>
+                            <label for="repayMode">Repayment Schedule Mode <span class="req">*</span></label>
+                            <span class="field-hint">Feature: <code>REPAY_MODE</code> (Normal, Installment)</span>
+                            <input type="text" id="repayMode" class="form-control" placeholder="e.g. Normal, Installment" maxlength="30" required>
+                            <div id="repayModeFeedback" class="invalid-feedback">Repayment schedule mode is required.</div>
                         </div>
                     </div>
                 </div>
@@ -300,11 +286,11 @@
                 <div class="prob-gauge-container">
                     <div class="prob-gauge-labels">
                         <span class="gauge-caption">Model-Reported Class B Probability</span>
-                        <span class="gauge-threshold">Threshold: <strong id="resGaugeThreshold">0.3000</strong></span>
+                        <span class="gauge-threshold">Threshold: <strong id="resGaugeThreshold">0.4200</strong></span>
                     </div>
                     <div class="gauge-track" aria-hidden="true">
                         <div id="resProbBar" class="gauge-bar" style="width: 0%;"></div>
-                        <div class="gauge-marker" style="left: 30%;" title="Decision Threshold: 0.3000"></div>
+                        <div class="gauge-marker" style="left: 42%;" title="Decision Threshold: 0.4200"></div>
                     </div>
                     <div class="gauge-note">Model-reported probability for Class B. This does not represent a verified financial default probability.</div>
                 </div>
@@ -325,7 +311,7 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Decision Threshold</div>
-                        <div id="resThreshold" class="stat-value">0.3000</div>
+                        <div id="resThreshold" class="stat-value">0.4200</div>
                     </div>
                 </div>
 

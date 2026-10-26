@@ -5,18 +5,29 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 /**
- * Domain model representing a loan application with its nine ML input features
+ * Domain model representing a loan application with its ML input features
  * and audit timestamps, mapping to the LOAN_APPLICATION table.
+ *
+ * NOTE: As of v2.0, demographic features (infMaritalStatus, infGender) are deprecated
+ * and optional (nullable) to preserve privacy and remove non-predictive personal attributes.
+ * Active ML scoring uses the seven core financial and loan parameters.
  */
 public class LoanApplication implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private Long applicationId;
     private BigDecimal investmentTotal;
     private BigDecimal accCurrentBalance;
+
+    /** @deprecated Demographic feature removed from active prediction in v2.0. Optional/nullable. */
+    @Deprecated
     private String infMaritalStatus;
+
+    /** @deprecated Demographic feature removed from active prediction in v2.0. Optional/nullable. */
+    @Deprecated
     private String infGender;
+
     private BigDecimal installSize;
     private BigDecimal duePayment;
     private String compensationCharged;
@@ -28,6 +39,19 @@ public class LoanApplication implements Serializable {
     public LoanApplication() {
     }
 
+    /**
+     * Active constructor for the 7 core features.
+     */
+    public LoanApplication(Long applicationId, BigDecimal investmentTotal, BigDecimal accCurrentBalance,
+                           BigDecimal installSize, BigDecimal duePayment, String compensationCharged,
+                           String clientType, String repayMode, Timestamp createdAt, Timestamp updatedAt) {
+        this(applicationId, investmentTotal, accCurrentBalance, null, null, installSize,
+             duePayment, compensationCharged, clientType, repayMode, createdAt, updatedAt);
+    }
+
+    /**
+     * Legacy constructor retaining optional demographic fields for backward compatibility.
+     */
     public LoanApplication(Long applicationId, BigDecimal investmentTotal, BigDecimal accCurrentBalance,
                            String infMaritalStatus, String infGender, BigDecimal installSize,
                            BigDecimal duePayment, String compensationCharged, String clientType,
@@ -70,18 +94,22 @@ public class LoanApplication implements Serializable {
         this.accCurrentBalance = accCurrentBalance;
     }
 
+    @Deprecated
     public String getInfMaritalStatus() {
         return infMaritalStatus;
     }
 
+    @Deprecated
     public void setInfMaritalStatus(String infMaritalStatus) {
         this.infMaritalStatus = infMaritalStatus;
     }
 
+    @Deprecated
     public String getInfGender() {
         return infGender;
     }
 
+    @Deprecated
     public void setInfGender(String infGender) {
         this.infGender = infGender;
     }

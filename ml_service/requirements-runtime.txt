@@ -1,0 +1,11 @@
+# LoanLens ML Inference Service - Runtime Requirements
+# Minimal set of dependencies required to load the fitted LightGBM champion pipeline and serve predictions.
+fastapi==0.153.0
+uvicorn==0.54.0
+pydantic>=2.0
+numpy==2.5.4
+pandas==3.0.6
+scikit-learn==1.9.1
+joblib==1.6.0
+lightgbm==4.7.0
+xgboost==3.4.1

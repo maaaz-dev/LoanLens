@@ -87,12 +87,11 @@ public class HttpPredictionProvider implements PredictionProvider {
             throw new PredictionException("Cannot execute prediction: LoanApplication is null.");
         }
 
-        // 1. Serialize the nine features matching the documented contract exactly
+        // 1. Serialize ONLY the seven active features matching the retrained v2.0 contract.
+        // Demographic fields (INF_MARITAL_STATUS, INF_GENDER) are strictly excluded from transmission.
         Map<String, Object> payloadMap = new LinkedHashMap<>();
         payloadMap.put("INVESTMENT_TOTAL", application.getInvestmentTotal());
         payloadMap.put("ACCCURRENTBALANCE", application.getAccCurrentBalance());
-        payloadMap.put("INF_MARITAL_STATUS", application.getInfMaritalStatus());
-        payloadMap.put("INF_GENDER", application.getInfGender());
         payloadMap.put("INSTALL_SIZE", application.getInstallSize());
         payloadMap.put("DUE_PAYMENT", application.getDuePayment());
         payloadMap.put("COMPENSATION_CHARGED", application.getCompensationCharged());

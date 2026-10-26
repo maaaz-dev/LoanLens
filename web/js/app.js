@@ -78,12 +78,10 @@ document.addEventListener("DOMContentLoaded", function () {
         clearValidationErrors();
         hideAlert();
 
-        // 1. Gather inputs
+        // 1. Gather inputs (7 active features without unnecessary personal data)
         var payload = {
             INVESTMENT_TOTAL: getValue("investmentTotal"),
             ACCCURRENTBALANCE: getValue("accCurrentBalance"),
-            INF_MARITAL_STATUS: getValue("infMaritalStatus"),
-            INF_GENDER: getValue("infGender"),
             INSTALL_SIZE: getValue("installSize"),
             DUE_PAYMENT: getValue("duePayment"),
             COMPENSATION_CHARGED: getValue("compensationCharged"),
@@ -142,29 +140,23 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!p.INVESTMENT_TOTAL || isNaN(p.INVESTMENT_TOTAL) || parseFloat(p.INVESTMENT_TOTAL) <= 0) {
             errors.investmentTotal = "Total investment requested must be a number greater than 0.";
         }
-        if (!p.ACCCURRENTBALANCE || isNaN(p.ACCCURRENTBALANCE)) {
+        if (p.ACCCURRENTBALANCE === undefined || p.ACCCURRENTBALANCE === null || p.ACCCURRENTBALANCE === "" || isNaN(p.ACCCURRENTBALANCE)) {
             errors.accCurrentBalance = "Current account balance must be a valid numeric value.";
         }
-        if (!p.INF_MARITAL_STATUS || p.INF_MARITAL_STATUS.trim().length === 0) {
-            errors.infMaritalStatus = "Marital status is required (max 30 chars).";
+        if (p.INSTALL_SIZE === undefined || p.INSTALL_SIZE === null || p.INSTALL_SIZE === "" || isNaN(p.INSTALL_SIZE) || parseFloat(p.INSTALL_SIZE) < 0) {
+            errors.installSize = "Installment size cannot be negative.";
         }
-        if (!p.INF_GENDER || p.INF_GENDER.trim().length === 0) {
-            errors.infGender = "Gender is required (max 10 chars).";
-        }
-        if (!p.INSTALL_SIZE || isNaN(p.INSTALL_SIZE) || parseFloat(p.INSTALL_SIZE) <= 0) {
-            errors.installSize = "Installment size must be a number greater than 0.";
-        }
-        if (!p.DUE_PAYMENT || isNaN(p.DUE_PAYMENT) || parseFloat(p.DUE_PAYMENT) < 0) {
+        if (p.DUE_PAYMENT === undefined || p.DUE_PAYMENT === null || p.DUE_PAYMENT === "" || isNaN(p.DUE_PAYMENT) || parseFloat(p.DUE_PAYMENT) < 0) {
             errors.duePayment = "Due payment cannot be negative.";
         }
         if (!p.COMPENSATION_CHARGED || p.COMPENSATION_CHARGED.trim().length === 0) {
             errors.compensationCharged = "Compensation charged status is required (max 30 chars).";
         }
         if (!p.CLIENT_TYPE || p.CLIENT_TYPE.trim().length === 0) {
-            errors.clientType = "Client type is required (max 30 chars).";
+            errors.clientType = "Branch area category (client type) is required (max 30 chars).";
         }
         if (!p.REPAY_MODE || p.REPAY_MODE.trim().length === 0) {
-            errors.repayMode = "Repayment mode is required (max 30 chars).";
+            errors.repayMode = "Repayment schedule mode is required (max 30 chars).";
         }
 
         return errors;
@@ -279,8 +271,6 @@ document.addEventListener("DOMContentLoaded", function () {
         var fieldMap = {
             "INVESTMENT_TOTAL": "investmentTotal",
             "ACCCURRENTBALANCE": "accCurrentBalance",
-            "INF_MARITAL_STATUS": "infMaritalStatus",
-            "INF_GENDER": "infGender",
             "INSTALL_SIZE": "installSize",
             "DUE_PAYMENT": "duePayment",
             "COMPENSATION_CHARGED": "compensationCharged",
@@ -330,29 +320,25 @@ document.addEventListener("DOMContentLoaded", function () {
     function fillSampleLow() {
         clearValidationErrors();
         hideAlert();
-        setValue("investmentTotal", "25000.00");
-        setValue("accCurrentBalance", "14500.50");
-        setValue("infMaritalStatus", "Married");
-        setValue("infGender", "F");
-        setValue("installSize", "850.00");
+        setValue("investmentTotal", "50000.00");
+        setValue("accCurrentBalance", "28500.00");
+        setValue("installSize", "1200.00");
         setValue("duePayment", "0.00");
         setValue("compensationCharged", "None");
-        setValue("clientType", "Individual");
-        setValue("repayMode", "Monthly");
+        setValue("clientType", "Urban");
+        setValue("repayMode", "Normal");
     }
 
     function fillSampleHigh() {
         clearValidationErrors();
         hideAlert();
-        setValue("investmentTotal", "150000.00");
-        setValue("accCurrentBalance", "-3200.00");
-        setValue("infMaritalStatus", "Single");
-        setValue("infGender", "M");
-        setValue("installSize", "18500.00");
-        setValue("duePayment", "2450.00");
+        setValue("investmentTotal", "50000.00");
+        setValue("accCurrentBalance", "0.00");
+        setValue("installSize", "1500.00");
+        setValue("duePayment", "25000.00");
         setValue("compensationCharged", "Penalty Charged");
-        setValue("clientType", "Small Business");
-        setValue("repayMode", "Bullet");
+        setValue("clientType", "Rural");
+        setValue("repayMode", "Installment");
     }
 
     /* ==============================================================================
