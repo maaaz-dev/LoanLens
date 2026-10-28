@@ -219,59 +219,56 @@ The following sample values/results were recorded during a prior local run with 
 
 ## 7. Windows Runbook & Service Control
 
-### Step 1: Start the Python ML Service
+Run the following commands from the repository root in PowerShell.
 
-```powershell
-cd .
+### Step 1: Start the Python ML service
+
+~~~~powershell
 .\ml_service\start_service.ps1
-```
+~~~~
 
-Or run via dedicated venv:
+Keep this terminal running. Alternatively, use the dedicated environment if it has already been created and installed:
 
-```powershell
-# Run from the repository root
+~~~~powershell
 & ".\ml_service\.venv\Scripts\python.exe" ml_service/run_server.py
-```
+~~~~
 
-The service will start on `http://127.0.0.1:8000`.
+The service is expected at http://127.0.0.1:8000. Check its active model and contract in a second terminal:
 
-### Step 2: Configure LoanLens to Use Python ML Service
+~~~~powershell
+Invoke-RestMethod "http://127.0.0.1:8000/health" | ConvertTo-Json -Depth 5
+Invoke-RestMethod "http://127.0.0.1:8000/model-info" | ConvertTo-Json -Depth 8
+~~~~
 
-LoanLens defaults to `LOAN_ML_MODE=mock` for zero-dependency standalone operation. To connect to the live Python service, set the following environment variables:
+### Step 2: Configure the Java application for HTTP inference
 
-```powershell
+Set these values in the same process/environment that launches Tomcat, or configure them in Tomcat's bin/setenv.bat and restart Tomcat:
+
+~~~~powershell
 $env:LOAN_ML_MODE = "http"
 $env:LOAN_ML_BASE_URL = "http://127.0.0.1:8000"
-```
+~~~~
 
-Or in Apache Tomcat `bin/setenv.bat`:
+For Tomcat bin/setenv.bat, use:
 
-```cmd
+~~~~cmd
 set "LOAN_ML_MODE=http"
 set "LOAN_ML_BASE_URL=http://127.0.0.1:8000"
-```
+~~~~
 
-### Step 3: Run Automated Test Suites
+Do not assume an already-running Tomcat service inherits environment variables set in a separate PowerShell window. Confirm the active provider through the Java health/configuration response. Mock mode is simulated output, not live model inference.
 
-**Run Python tests:**
+### Step 3: Run the tests
 
-```powershell
-# Run from the repository root
-& ".\ml_service\.venv\Scripts\python.exe" -m unittest discover -s ml_service/tests -v
-```
+~~~~powershell
+& ".\ml_service\.venv\Scripts\python.exe" -m unittest discover -s ".\ml_service\tests" -v
+ant test
+ant verify
+~~~~
 
-**Run Java backend tests and WAR verification:**
-
-```powershell
-& "C:\Tools\apache-ant-1.10.18\bin\ant.bat" -f build.xml `
-  "-Dj2ee.server.home=C:\Tools" `
-  "-Dj2ee.platform.classpath=C:\Program Files\Apache NetBeans\enterprise\modules\ext\servlet-jsp-api-6.1_3.0.jar" `
-  "-Dlibs.CopyLibs.classpath=C:\Program Files\Apache NetBeans\java\ant\extra\org-netbeans-modules-java-j2seproject-copylibstask.jar" `
-  test
-```
+Use the Python environment created from ml_service/requirements-runtime.txt. For Java verification, JDK 21, Apache Ant and the NetBeans CopyLibs classpath referenced by build.xml must be configured. If the plain ant command is unavailable, use your installed Ant executable and set the build properties described in the root README. Do not copy machine-specific paths from another computer.
 
 ---
-
 ## 8. Database Backward Compatibility
 
 1. **Nullable Legacy Columns**: `INF_MARITAL_STATUS` and `INF_GENDER` in `database/schema.sql` are defined as `NULL` (nullable).
