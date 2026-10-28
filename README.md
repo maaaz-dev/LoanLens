@@ -296,9 +296,9 @@ The current committed metadata (ml_service/models/model_metadata.json) identifie
 - Decision threshold: approximately 0.42
 - Selection and threshold metrics: calculated on the project's validation split.
 
-The metadata reports validation ROC-AUC around **0.781** and threshold-specific validation precision/recall around **0.205 / 0.800**. These are validation results, not independent external-test performance or a guarantee about future applicants. The threshold was selected using validation data; do not present those figures as unbiased performance on unseen populations.
+The metadata reports validation ROC-AUC around **0.781** and threshold-specific validation precision/recall around **0.205 / 0.800**. These are validation results; the threshold was selected using validation data, so they are not an unbiased estimate of performance on unseen populations.
 
-Older repository documentation describes an earlier model snapshot (including Random Forest, a 0.30 threshold and historical metrics). Those figures should not be mixed with the active v2.0 LightGBM metadata. A separate prior holdout audit also reported near-chance ROC-AUC for an earlier snapshot; it is not directly comparable unless the exact model version and evaluation data are matched.
+The current integration guide also records a separate held-out evaluation with **4,305 rows, only 19 Class B cases, ROC-AUC 0.5282, PR-AUC 0.0166, precision 0.72%, and recall 42.11%** at the frozen threshold. These results indicate weak discrimination on that held-out population. The raw holdout dataset is not included in this public source tree, so the figures cannot be independently reproduced from this repository alone. Older repository documentation also describes a previous model snapshot (including Random Forest and a 0.30 threshold); do not mix those historical results with the active v2.0 LightGBM metadata.
 
 ## Limitations and responsible use
 
