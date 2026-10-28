@@ -2,9 +2,12 @@
 
 ## 1. Executive Summary & Architecture Overview
 
-The LoanLens application integrates a retrained machine learning pipeline into its production Java/Jakarta Servlet architecture without breaking, rewriting, or replacing existing Java components.
+The LoanLens academic prototype integrates a retrained machine-learning pipeline into its Java/Jakarta Servlet application.
 
-As of **v2.0**, unnecessary demographic attributes (`INF_GENDER` and `INF_MARITAL_STATUS`) have been removed from the active prediction pipeline and user interface to protect applicant privacy and avoid non-predictive personal inputs. The machine learning model was retrained on the resulting 7-feature contract using the original raw financial dataset.
+As of **v2.0**, the active prediction pipeline and user interface use a seven-feature contract; `INF_GENDER` and `INF_MARITAL_STATUS` are excluded. The model artifact and metadata are checked into the repository, while local training/test data are not included in the public source bundle.
+
+> [!WARNING]
+> **Academic prototype only — do not use for real lending decisions.** `QUALITY_OF_LOAN` classes `G` and `B` are dataset labels. The available project documentation does not verify that class `B` means a legal or financial default event. Validation results are not a guarantee of performance on new applicants.
 
 The complete end-to-end execution path operates as follows:
 
@@ -34,7 +37,7 @@ The complete end-to-end execution path operates as follows:
                │  predict_proba -> P(Class = 'B')
                ▼
 [Threshold Decision Engine: model_metadata.json (Threshold 0.4200)]
-               │  P(B) >= 0.4200 ? 'B' (Bad / Default Risk) : 'G' (Good / Low Risk)
+               │  P(B) >= 0.4200 ? 'B' : 'G' (dataset labels; not verified default outcomes)
                ▼
 [JSON Response: {predicted_class, probability_b, threshold_used, model_version}]
                │  HTTP Response 200 OK
@@ -55,7 +58,7 @@ The complete end-to-end execution path operates as follows:
 
 ## 2. ML Service File Organization
 
-All Python assets are located in `ml_service/` at the root of `Loan-Default-Risk-Prediction-copy`:
+The Python service assets are located in `ml_service/` at the repository root:
 
 | Path | Description |
 | :--- | :--- |
@@ -169,9 +172,9 @@ Header: `Content-Type: application/json`
 - Total Validation Rows: `7,482` (Class G: `6,651`, Class B: `831`)
 - ROC-AUC: `0.7807`
 - PR-AUC: `0.3668`
-- Calibrated Decision Threshold: `0.4200` (tuned to achieve $\ge 80\%$ recall on adverse Class B loans)
+- Decision threshold selected on validation split: `0.4200` (chosen for a target recall on Class B validation examples)
 - Metrics at Threshold `0.4200`:
-  - Recall (Class B): `80.02%` (665 / 831 true defaults flagged)
+  - Recall (Class B): `80.02%` (665 / 831 Class B validation examples identified)
   - Precision: `20.53%`
   - F1-Score: `0.3268`
   - Overall Accuracy: `63.38%`
@@ -180,12 +183,12 @@ Header: `Content-Type: application/json`
 #### 2. Independent Held-Out Test Evaluation (`test-FIN_ANA_DATA .xls`):
 - Total Binary Samples: `4,305` (Class G: `4,286`, Class B: `19`)
 - Provenance Note: Never used during training, cross-validation, model selection, or threshold tuning.
-- Extreme Imbalance: $99.56\%$ Class G vs $0.44\%$ Class B (only 19 default cases).
+- Extreme Imbalance: $99.56\%$ Class G vs $0.44\%$ Class B (only 19 Class B records).
 - Metrics at Frozen Threshold `0.4200`:
   - ROC-AUC: `0.5282`
   - PR-AUC: `0.0166`
   - Accuracy: `74.08%`
-  - Recall: `42.11%` (8 / 19 defaults flagged)
+  - Recall: `42.11%` (8 / 19 Class B records identified)
   - Precision: `0.72%`
   - F1-Score: `0.0141`
   - Confusion Matrix: TN: `3,181`, FP: `1,105`, FN: `11`, TP: `8`
@@ -196,7 +199,7 @@ Header: `Content-Type: application/json`
 
 Both sample buttons in `workspace.jsp` / `app.js` have been calibrated against the live v2.0 model:
 
-### Synthetic Example 1 (Low Risk / Good Credit Profile)
+### Synthetic Example 1 (predicted Class G in the recorded demo)
 - **Inputs**: `INVESTMENT_TOTAL`: 50,000.00, `ACCCURRENTBALANCE`: 28,500.00, `INSTALL_SIZE`: 1,200.00, `DUE_PAYMENT`: 0.00, `COMPENSATION_CHARGED`: `None`, `CLIENT_TYPE`: `Urban`, `REPAY_MODE`: `Normal`.
 - **Live Model Response**:
   - Predicted Class: `G`
@@ -204,7 +207,7 @@ Both sample buttons in `workspace.jsp` / `app.js` have been calibrated against t
   - Threshold: `0.4200`
   - Model Version: `v2.0`
 
-### Synthetic Example 2 (High Risk / Delinquent Profile)
+### Synthetic Example 2 (predicted Class B in the recorded demo)
 - **Inputs**: `INVESTMENT_TOTAL`: 50,000.00, `ACCCURRENTBALANCE`: 0.00, `INSTALL_SIZE`: 1,500.00, `DUE_PAYMENT`: 25,000.00, `COMPENSATION_CHARGED`: `Penalty Charged`, `CLIENT_TYPE`: `Rural`, `REPAY_MODE`: `Installment`.
 - **Live Model Response**:
   - Predicted Class: `B`
@@ -219,7 +222,7 @@ Both sample buttons in `workspace.jsp` / `app.js` have been calibrated against t
 ### Step 1: Start the Python ML Service
 
 ```powershell
-cd "E:\College Projects\Loan-Default-Risk-Prediction-copy"
+cd .
 .\ml_service\start_service.ps1
 ```
 
