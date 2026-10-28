@@ -1,263 +1,335 @@
-1. Project Overview
+<div align="center">
 
-The **Loan Risk Prediction Using Machine Learning** project is an enterprise web application designed to evaluate loan applicant data and predict credit/loan risk using a machine learning model. The system integrates a traditional Java/Jakarta EE web application with a specialized Python-based machine learning inference service, backed by persistent operational storage (Oracle Database or In-Memory development storage).
+# LoanLens
+### Loan Default Risk Prediction — Academic Project
 
-> **Documentation Quick Links:**
-> - 📘 **[Student & Developer Walkthrough Guide](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/docs/project-walkthrough.md):** Complete beginner-friendly code tour, end-to-end request lifecycle, viva questions & answers, and architecture explanations.
-> - 🤖 **[ML Teammate Integration Package](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/docs/ml-integration-handoff.md):** HTTP specification, request/response JSON schemas, model-owner responsibilities, and acceptance checklist.
+**A Java web application with a separate Python machine-learning inference service.**
 
----
+[![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://www.oracle.com/java/)
+[![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Model](https://img.shields.io/badge/Model-LightGBM-v2.0-2b7a3d)](https://lightgbm.readthedocs.io/)
+[![Status](https://img.shields.io/badge/Status-Academic%20Prototype-6f42c1)](#limitations-and-responsible-use)
 
-## 2. Current Status
+</div>
 
-The workspace currently contains:
-1. **Repository & Build:** NetBeans-scaffolded Apache Ant web application structure targeting Java 21 LTS and Apache Tomcat 10.1 (Jakarta EE 10 / Servlet 6.0).
-2. **Simplified Clean Architecture:** Exactly two Servlets (`LoanApplicationServlet` and `HealthServlet`), direct Repository implementations (`InMemory*` and `Oracle*`) without redundant DAO delegate layers, and clean separation of concerns.
-3. **Reconciled Database Schema:** Oracle 10g XE DDL script in [`database/schema.sql`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/database/schema.sql) with sequence generators, foreign keys, and constraints.
-4. **Dual Storage Architecture:** Storage-agnostic repository interfaces (`LoanApplicationRepository`, `PredictionRecordRepository`) supporting both `oracle` (JDBC / sequences) and `memory` (thread-safe ConcurrentHashMap / AtomicLong) modes, governed by `LOAN_STORAGE_MODE`.
-5. **Hardened Configuration & ML Provider Subsystem:** Clean separation between simulated development (`LOAN_ML_MODE=mock`) and real HTTP inference (`LOAN_ML_MODE=http`), powered by `HttpPredictionProvider` using built-in Java 21 `HttpClient` with configurable connect and request timeouts. Strict validation prevents silent fallbacks.
-6. **Repeatable Ant Testing Pipeline:** Dedicated Ant targets (`ant test`, `ant verify`) compiling test classes to `build/test/classes` completely separated from the production classes, enforcing `failonerror="true"` on execution, and executing 22/22 unit and contract test scenarios with 100% pass rate.
-7. **Standardized API Contract & Status Codes:** Standardized `POST /api/applications` returning `201 Created` on success, `400 Bad Request` on validation failure, `502 Bad Gateway` on upstream ML provider outage (preserving the persisted `applicationId`), and `500 Internal Server Error` on persistence failure.
-8. **Premium Fintech Analytics Frontend:** Modern dark midnight-navy JSP/CSS/JavaScript interface in [`web/index.jsp`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/index.jsp) featuring ambient grid backdrop, technical hero with dynamic cursor spotlight, sequence workflow indicator (`01 INPUT → 02 INFERENCE → 03 RECORD`), quick-fill test cases, high-contrast inputs with focus glow, spotlight result card with risk probability gauge bar (30% decision threshold indicator), responsive media queries, and 100% `textContent` / DOM-node rendering for total XSS safety.
-9. **Verified Live Local Workflow:** Successfully deployed and verified against local Apache Tomcat 10.1 (`8081`) and validated via headless Chromium Edge DOM inspection (376 DOM lines).
-10. **Build & Distribution Artifact:** Final WAR package assembled and preserved at [`dist/Loan_Default_Risk_Prediction.war`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/dist/Loan_Default_Risk_Prediction.war) (187,932 bytes).
+> [!WARNING]
+> **For learning and demonstration only — not for real lending decisions.** The active model predicts dataset labels **G** and **B** for the target **QUALITY_OF_LOAN**; label B has not been independently verified as a legal or financial default event. Published validation figures are not a guarantee of performance on new applicants. Do not use this prototype to approve or reject real loans.
 
-> **Important Architecture & ML Notice:** The application currently defaults to `LOAN_STORAGE_MODE=memory` and `LOAN_ML_MODE=mock` for zero-prerequisite development. In mock mode, predictions are simulated (`mock-v1-simulated`) and do not reflect real ML decisions. The HTTP adapter (`HttpPredictionProvider`) is ready to connect to the teammate's Python/FastAPI service once launched. Automated tests used an in-process HTTP stub to verify contract compliance without claiming the external Python service was executed.
+## Contents
 
----
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Technology stack](#technology-stack)
+- [Active model input contract](#active-model-input-contract)
+- [Project structure](#project-structure)
+- [Run locally on Windows](#run-locally-on-windows)
+- [Configuration](#configuration)
+- [API endpoints](#api-endpoints)
+- [Build and tests](#build-and-tests)
+- [Model notes](#model-notes)
+- [Limitations and responsible use](#limitations-and-responsible-use)
+- [Documentation](#documentation)
+- [Future work](#future-work)
+- [License](#license)
 
-## 3. Architecture & Separation of Concerns
+## Overview
 
-```mermaid
+**LoanLens** is an academic full-stack project demonstrating how a web application can validate loan-related inputs, record an application, call a separate model-serving API, and present a structured prediction result.
+
+The Java application handles the web workflow, validation, storage abstraction and prediction-provider selection. When configured for HTTP mode, it sends the active feature contract to a Python FastAPI service, which loads a saved preprocessing/model pipeline and returns the predicted class, Class B probability, threshold and model version.
+
+The project demonstrates **Java + Python integration, API design, input validation, storage abstraction, automated tests and model-serving concepts**. It is not a production underwriting system.
+
+## Features
+
+- Responsive browser interface built with JSP, HTML, CSS and vanilla JavaScript.
+- Java 21 backend using Jakarta Servlet APIs and Apache Tomcat 10.1.
+- Input validation and structured API errors.
+- Separate prediction providers:
+  - **Mock mode:** simulated output for development; not an actual model inference.
+  - **HTTP mode:** calls the Python model API.
+- Python FastAPI endpoints for health, model information and prediction.
+- Saved preprocessing and LightGBM pipeline with engineered features.
+- In-memory and Oracle repository implementations.
+- Apache Ant build/test workflow and Python unit tests.
+- Architecture, integration, model-training and project walkthrough documentation.
+
+## Architecture
+
+Browser (JSP/JavaScript) → Java Servlet → Application Service and Validation → Repository and Prediction Provider → Python FastAPI /predict (HTTP mode) → Saved preprocessing and LightGBM pipeline → result returned to the UI.
+
+~~~mermaid
 flowchart TD
-    User[End User / Loan Officer] -->|Browser HTTP / UI| Frontend[JSP / HTML5 / CSS3 / Vanilla JS]
-    Frontend -->|POST JSON| AppServlet[LoanApplicationServlet /api/applications]
-    Frontend -->|GET Status| HealthServlet[HealthServlet /api/health]
-    
-    subgraph ServiceLayer[Java Service Layer]
-        AppServlet --> AppService[LoanApplicationService]
-        AppService --> Validation[Input Validation Engine]
-        AppService --> Factory[PredictionProviderFactory]
-        Factory -->|LOAN_ML_MODE = mock| MockProvider[MockPredictionProvider / Simulated]
-        Factory -->|LOAN_ML_MODE = http| HttpProvider[HttpPredictionProvider / Java 21 HttpClient]
-    end
+    A[User / Browser] --> B[JSP + CSS + JavaScript]
+    B --> C[Java Servlet API]
+    C --> D[Validation and Application Service]
+    D --> E[Application / Prediction Repositories]
+    E --> F[In-memory storage]
+    E --> G[Oracle storage option]
+    D --> H{Prediction mode}
+    H -->|mock| I[Simulated result]
+    H -->|http| J[Python FastAPI /predict]
+    J --> K[Saved preprocessing + LightGBM model]
+    K --> J
+    I --> D
+    J --> D
+    D --> L[Prediction result and status]
+    L --> B
+~~~
 
-    subgraph ExternalMLService[Python ML Inference Service - Teammate Component]
-        HttpProvider -.->|POST /predict| FastApiServer[FastAPI Inference Server :8000]
-        FastApiServer -.-> TrainedModel[Random Forest Model Joblib / threshold=0.30]
-    end
+The Java web application and Python service are separate processes. In HTTP mode, the Python API must be running and reachable. In mock mode, predictions are simulated and must be described as such.
 
-    subgraph StorageLayer[Storage Repositories - Governed by LOAN_STORAGE_MODE]
-        AppService --> Repos[RepositoryFactory]
-        Repos -->|mode = memory| MemoryRepo[InMemory Repositories / ConcurrentHashMap]
-        Repos -->|mode = oracle| OracleRepo[Oracle Repositories / Direct JDBC & Sequences]
-        OracleRepo -->|Sequences & Tx| OracleDB[(Oracle Database XE 10g)]
-    end
-```
+## Technology stack
 
-### Architectural Safeguards & Simplifications
-- **Exactly Two Servlets:** `LoanApplicationServlet` controls the application lifecycle; `HealthServlet` monitors operational status.
-- **Direct Repositories:** Eliminated redundant DAO intermediate classes. `OracleLoanApplicationRepository` and `OraclePredictionRecordRepository` manage their own SQL directly, keeping the codebase student-friendly.
-- **Storage Independence:** Service and servlet layers depend strictly on repository interfaces, enabling frictionless testing and development without live database dependencies.
-- **Strict Configuration Enforcement:** If `oracle` or `http` mode is configured, the application strictly communicates with those systems. It **never** silently falls back to `memory` or `mock`.
-- **Transaction & ML Separation:** In Oracle mode, loan application records are committed to the database before calling the ML provider, ensuring external HTTP network calls never hold database locks or connections open.
-- **Fail-Safe Processing Result:** When prediction inference fails after application persistence, the server returns HTTP `502 Bad Gateway` with the recorded `applicationId`, clearly distinguishing external inference outages from internal database failures (`500`).
+| Component | Technology | Purpose |
+|---|---|---|
+| Frontend | JSP, HTML, CSS, vanilla JavaScript | Input form and result display |
+| Web backend | Java 21, Jakarta Servlets | Request handling, validation and workflow |
+| Web server | Apache Tomcat 10.1.x | Runs the Java web application |
+| Build | Apache Ant / NetBeans project build | Compilation, checks and WAR packaging |
+| ML API | Python, FastAPI, Uvicorn | Serves model inference over HTTP |
+| Active model artifact | LightGBM pipeline, metadata version v2.0 | Model prediction |
+| ML preprocessing | scikit-learn, pandas, NumPy, joblib | Transformations and model loading |
+| Storage | In-memory; Oracle repository/schema option | Application and prediction records |
+| Tests | Java test runner, Python unittest | Configuration, API contract and workflow checks |
 
----
+## Active model input contract
 
-## 4. ML Experimentation Results & Feature Contract
+The **v2.0 Python inference API accepts seven non-demographic features**. The API rejects extra fields, including INF_GENDER and INF_MARITAL_STATUS.
 
-Machine learning experimentation was conducted in a Kaggle notebook environment. Baseline evaluated was Logistic Regression; the selected refitted model was Random Forest evaluated at decision threshold `0.30`.
+| Feature | Description |
+|---|---|
+| INVESTMENT_TOTAL | Requested investment/loan amount; must be greater than zero. |
+| ACCCURRENTBALANCE | Current account balance; a negative value can represent an overdraft and is allowed by the current contract. |
+| INSTALL_SIZE | Installment size; zero is allowed. |
+| DUE_PAYMENT | Amount currently due; must be non-negative. |
+| COMPENSATION_CHARGED | Categorical compensation/penalty indicator. |
+| CLIENT_TYPE | Client/area category represented in the training data. |
+| REPAY_MODE | Repayment mode/category represented in the training data. |
 
-| Metric | Experimental Value |
-| :--- | :--- |
-| **Dataset Target** | `QUALITY_OF_LOAN` |
-| **Target Classes** | `G` (Good) and `B` (Bad) |
-| **Selected Decision Threshold** | `0.30` |
-| **Accuracy** | 88.39% (0.8839) |
-| **Class `B` Precision** | 47.92% (0.4792) |
-| **Class `B` Recall** | 52.59% (0.5259) |
-| **Class `B` F1-score** | 50.14% (0.5014) |
-| **ROC-AUC** | 0.8365 |
-| **Average Precision (PR-AUC)** | 0.5281 |
+The current metadata identifies B as the positive class and G as the negative class. The domain meaning of those labels must be confirmed from a reliable data dictionary before interpreting B as real-world default.
 
-> **Critical Notice on Target Semantics:** Class `B` in `QUALITY_OF_LOAN` represents the experimental bad loan classification label from the training dataset. **It is not confirmed as a legal or financial loan default outcome**, nor does it dictate an automated loan approval or rejection decision. The business and domain meaning of `B` must be verified and specified separately before final decision-making logic is locked.
+## Project structure
 
-### Nine Input Features Contract
+~~~text
+.
+├── database/
+│   └── schema.sql
+├── docs/
+│   ├── LOANLENS_COMPLETE_ARCHITECTURE_AND_PIPELINE_GUIDE.md
+│   ├── ml-integration-handoff.md
+│   ├── ml-service-integration.md
+│   └── project-walkthrough.md
+├── ml_service/
+│   ├── app/
+│   │   ├── main.py
+│   │   └── pipeline.py
+│   ├── models/
+│   │   ├── best_model.joblib
+│   │   ├── model_metadata.json
+│   │   └── legacy / comparison model artifacts
+│   ├── reports/
+│   ├── tests/
+│   ├── requirements-runtime.txt
+│   ├── requirements.txt
+│   ├── run_server.py
+│   ├── start_service.ps1
+│   └── start_service.bat
+├── nbproject/
+├── src/                 # Java application source
+├── test/                # Java tests
+├── web/                 # JSP pages, styles, scripts and descriptors
+├── .gitignore
+├── build.xml
+└── README.md
+~~~
 
-| # | Feature Name | Java Type | Schema / Oracle Type | Category / Description |
-| :-: | :--- | :--- | :--- | :--- |
-| 1 | `INVESTMENT_TOTAL` | `BigDecimal` | `NUMBER(15, 2)` | Numeric: Total loan/investment requested (> 0) |
-| 2 | `ACCCURRENTBALANCE` | `BigDecimal` | `NUMBER(15, 2)` | Numeric: Applicant current account balance (can be negative for overdraft) |
-| 3 | `INF_MARITAL_STATUS` | `String` | `VARCHAR2(30)` | Categorical: Marital status (preserved text) |
-| 4 | `INF_GENDER` | `String` | `VARCHAR2(10)` | Categorical: Gender (preserved text) |
-| 5 | `INSTALL_SIZE` | `BigDecimal` | `NUMBER(15, 2)` | Numeric: Installment payment size (> 0) |
-| 6 | `DUE_PAYMENT` | `BigDecimal` | `NUMBER(15, 2)` | Numeric: Amount due for payment (>= 0) |
-| 7 | `COMPENSATION_CHARGED` | `String` | `VARCHAR2(30)` | Categorical: Compensation/penalty fee charged status (reconciled as text) |
-| 8 | `CLIENT_TYPE` | `String` | `VARCHAR2(30)` | Categorical: Client classification type (preserved text) |
-| 9 | `REPAY_MODE` | `String` | `VARCHAR2(30)` | Categorical: Repayment mode/channel (preserved text) |
+Generated build output, local virtual environments and local-only configuration are not required in source control unless a release process deliberately manages a specific artifact separately.
 
----
+## Run locally on Windows
 
-## 5. Configuration Reference
+Use PowerShell. Open the repository root (the folder containing build.xml).
 
-The application is configured using environment variables, JVM system properties, or servlet context initialization parameters in `web.xml`:
+### 1. Create the Python environment
 
-| Variable / Property | Permitted Values | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `LOAN_STORAGE_MODE`<br>`loan.storage.mode` | `memory`, `oracle` | `memory` | Active persistence repository. Throws `IllegalStateException` on any other value. |
-| `LOAN_ML_MODE`<br>`loan.ml.mode` | `mock`, `http` | `mock` | Active prediction provider. Selects `MockPredictionProvider` or `HttpPredictionProvider`. |
-| `LOAN_ML_BASE_URL`<br>`loan.ml.baseUrl` | Valid HTTP/HTTPS URL | *Required if `http`* | Target URL of the Python inference service (e.g., `http://localhost:8000`). |
-| `LOAN_ML_CONNECT_TIMEOUT_MS`<br>`loan.ml.connectTimeoutMs` | Integer > 0 | `3000` | HTTP connect timeout in milliseconds. |
-| `LOAN_ML_REQUEST_TIMEOUT_MS`<br>`loan.ml.requestTimeoutMs` | Integer > 0 | `5000` | HTTP response read timeout in milliseconds. |
-| `LOAN_DB_USER`<br>`loan.db.user` | String | *Empty* | Oracle database username (required when storage mode is `oracle`). |
-| `LOAN_DB_PASSWORD`<br>`loan.db.password` | String | *Empty* | Oracle database password. |
-| `LOAN_DB_URL`<br>`loan.db.url` | String | `jdbc:oracle:thin:@localhost:1521:XE` | Oracle database connection string. |
+Use a Python version compatible with the pinned dependencies in ml_service/requirements-runtime.txt. Example with Python 3.14, if available:
 
----
+~~~powershell
+py -3.14 -m venv .\ml_service\.venv
+& ".\ml_service\.venv\Scripts\python.exe" -m pip install --upgrade pip
+& ".\ml_service\.venv\Scripts\python.exe" -m pip install -r ".\ml_service\requirements-runtime.txt"
+~~~
 
-## 6. Python ML Service HTTP Contract & Handoff
+The runtime requirements are the minimal service environment. ml_service/requirements.txt also contains packages used by training and experimentation.
 
-> **Full Handoff Package:** See [`docs/ml-integration-handoff.md`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/docs/ml-integration-handoff.md) for the complete integration specification, model-owner responsibilities, and acceptance checklist.
+### 2. Run the Python tests
 
-When `LOAN_ML_MODE=http`, the Java backend invokes the Python service via HTTP POST:
+~~~powershell
+& ".\ml_service\.venv\Scripts\python.exe" -m unittest discover -s ".\ml_service\tests" -v
+~~~
 
-- **Endpoint:** `POST {LOAN_ML_BASE_URL}/predict`
-- **Request Headers:** `Content-Type: application/json`, `Accept: application/json`
-- **Request Body (JSON):**
-  ```json
-  {
-    "INVESTMENT_TOTAL": 75000.00,
-    "ACCCURRENTBALANCE": 18500.00,
-    "INF_MARITAL_STATUS": "Married",
-    "INF_GENDER": "Male",
-    "INSTALL_SIZE": 3500.00,
-    "DUE_PAYMENT": 850.00,
-    "COMPENSATION_CHARGED": "No",
-    "CLIENT_TYPE": "Individual",
-    "REPAY_MODE": "Auto-Debit"
-  }
-  ```
-- **Expected Success Response (200 OK):**
-  ```json
-  {
-    "predicted_class": "B",
-    "probability_b": 0.3542,
-    "threshold_used": 0.3000,
-    "model_version": "rf-v1.0"
-  }
-  ```
-- **Validation Rules & Error Handling:**
-  - `predicted_class` must be strictly `"G"` or `"B"`.
-  - `probability_b` and `threshold_used` must be numbers between `0.0` and `1.0`.
-  - Upstream non-200 responses, connection failures, timeouts, and malformed JSON trigger a structured `PredictionException` without application crashing or transaction corruption.
+### 3. Start the Python API
 
----
+~~~powershell
+.\ml_service\start_service.ps1
+~~~
 
-## 7. Repeatable Testing Through Ant
+Leave that terminal running. In another PowerShell window, check health and active model metadata:
 
-Automated testing is integrated into the NetBeans Ant build via dedicated targets:
+~~~powershell
+Invoke-RestMethod "http://127.0.0.1:8000/health" |
+  ConvertTo-Json -Depth 5
 
-```powershell
-# Run the automated test suite
-& "C:\Program Files\NetBeans-21\netbeans\extide\ant\bin\ant.bat" test
+Invoke-RestMethod "http://127.0.0.1:8000/model-info" |
+  ConvertTo-Json -Depth 8
+~~~
 
-# Run the test suite and assemble the production WAR on success
-& "C:\Program Files\NetBeans-21\netbeans\extide\ant\bin\ant.bat" verify
-```
+The committed metadata for the current v2.0 snapshot names LightGBM as the selected model and sets the threshold to approximately 0.42. The live /model-info response is the authority for the runtime currently running on your machine.
 
-### Build & Isolation Architecture
-- **Separate Test Directory:** Test classes compile to `build/test/classes` while production classes compile to `build/web/WEB-INF/classes`. Test classes are excluded from the distribution WAR.
-- **Fail-Fast Build Result:** The `test` target executes with `fork="true"` and `failonerror="true"`. Any test failure causes the Ant build to fail immediately with exit code 1.
-- **Zero Heavyweight Dependencies:** The test suite uses Java 21's built-in `com.sun.net.httpserver.HttpServer` on ephemeral ports, requiring no third-party testing frameworks.
+### 4. Build and verify the Java application
 
-### Test Coverage Summary (22 / 22 Passed)
+Install JDK 21, Apache Tomcat 10.1.x and Apache Ant / NetBeans build support. From the project root, run:
 
-| Suite | Test Cases | Scope & Verifications | Status |
-| :--- | :---: | :--- | :---: |
-| **Configuration Tests** (`ConfigurationTest`) | 7 | Validates `memory` and `oracle` storage modes, `mock` and `http` ML modes, rejection of missing base URL, validation of malformed timeouts, and strict zero-silent-fallback guarantees. | **PASS** |
-| **HTTP Provider Contract Tests** (`HttpPredictionProviderTest`) | 9 | Runs against an in-process `HttpServer` stub on an ephemeral port. Validates successful serialization of all 9 features, preserved categorical strings with special characters, handling of HTTP 4xx/5xx errors, connection refusal, malformed JSON, out-of-range probabilities, invalid classes, and model version preservation. | **PASS** |
-| **Application Workflow Tests** (`ApplicationWorkflowTest`) | 6 | Validates end-to-end loan application processing, primary-foreign key association between `LoanApplication` and `PredictionRecord`, rejection of invalid inputs, upstream prediction outage handling, persistence failure handling, and simulation flag distinction. | **PASS** |
+~~~powershell
+ant test
+ant verify
+~~~
 
----
+If ant is not recognised, run the Ant executable bundled with your NetBeans installation, or configure the Ant path and CopyLibs classpath required by build.xml. Follow the first build error rather than deleting generated directories blindly.
 
-## 8. API Endpoints & Status Codes Specification
+### 5. Open the application
 
-### 1. `GET /api/health`
-Reports runtime health, active storage mode, application count, and provider status:
-```json
+Deploy the generated WAR using your configured Tomcat setup. The URL context path depends on the deployed WAR filename. For example, a WAR named LoanLens.war normally uses:
+
+~~~text
+http://localhost:8080/LoanLens/
+~~~
+
+Avoid deploying multiple differently named copies of the same app while testing, because it is easy to inspect the wrong context.
+
+## Configuration
+
+The Java application supports these configuration choices; exact precedence and required settings are implemented in src/java/com/loanrisk/config/.
+
+| Setting | Supported values | Purpose |
+|---|---|---|
+| LOAN_STORAGE_MODE | memory, oracle | Selects storage implementation. |
+| LOAN_ML_MODE | mock, http | Selects simulated output or the Python API provider. |
+| LOAN_ML_BASE_URL | URL, e.g. http://127.0.0.1:8000 | Python service base address when HTTP mode is enabled. |
+| LOAN_ML_CONNECT_TIMEOUT_MS | Positive integer | HTTP connection timeout. |
+| LOAN_ML_REQUEST_TIMEOUT_MS | Positive integer | HTTP response timeout. |
+| LOAN_DB_URL | JDBC URL | Oracle connection URL in Oracle mode. |
+| LOAN_DB_USER / LOAN_DB_PASSWORD | Local credentials | Oracle connection identity. Never commit real credentials. |
+| LOAN_ML_THRESHOLD | Number from 0 to 1 | Optional threshold override supported by the Python service. |
+
+**Mock vs HTTP**
+- mock mode returns simulated output. The result must not be called a live ML prediction.
+- http mode calls POST /predict on the running Python service. Verify the active provider and health response before describing a result as model-backed.
+
+**Storage**
+- memory is useful for development, but records are lost when the application process restarts.
+- The Oracle repository/schema option requires a configured Oracle database and compatible JDBC driver. Presence of schema/code is not proof that a live persistent Oracle deployment has been verified.
+
+## API endpoints
+
+### Java application
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | /api/health | Reports Java application/runtime and configured provider/storage status. |
+| POST | /api/applications | Validates the application, stores the application record, calls the selected provider and records the prediction when successful. |
+
+Expected status-code semantics documented by the Java application:
+
+| Status | Meaning |
+|---|---|
+| 201 Created | Application and prediction workflow completed successfully. |
+| 400 Bad Request | Invalid application input. |
+| 500 Internal Server Error | Internal or persistence failure. |
+| 502 Bad Gateway | Upstream prediction provider failed after application processing began; the application identifier may be retained in the response. |
+
+### Python inference service
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | /health | Checks the service and loaded model. |
+| GET | /model-info | Returns model version, threshold and metadata metrics. |
+| POST | /predict | Accepts the seven active features and returns the class/probability. |
+
+Example request to the Python service:
+
+~~~json
 {
-  "status": "UP",
-  "timestamp": "2026-10-15T23:28:24.116Z",
-  "runtime": { "javaVersion": "21.0.12", "serverInfo": "Apache Tomcat/10.1.57" },
-  "storage": {
-    "mode": "memory",
-    "status": "IN_MEMORY_ACTIVE",
-    "disclaimer": "Running in-memory storage mode. Records will be lost when application restarts and must never be used for production.",
-    "storedApplicationsCount": 1
-  },
-  "mlService": {
-    "mode": "mock",
-    "simulated": true,
-    "providerClass": "MockPredictionProvider",
-    "status": "MOCK_PROVIDER_ACTIVE",
-    "disclaimer": "Using simulated MockPredictionProvider. Outputs are for development and testing only, not genuine ML predictions."
-  }
+  "INVESTMENT_TOTAL": 2000000,
+  "ACCCURRENTBALANCE": 100000,
+  "INSTALL_SIZE": 10000,
+  "DUE_PAYMENT": 0,
+  "COMPENSATION_CHARGED": "N",
+  "CLIENT_TYPE": "Rural",
+  "REPAY_MODE": "N"
 }
-```
+~~~
 
-### 2. `POST /api/applications`
-Processes applicant data, validates the 9 features, persists the record, and invokes the prediction provider:
+Response fields include predicted_class, probability_b, threshold_used, and model_version. Returned values depend on the active model and supplied input; example inputs are for demonstration only.
 
-| Status Code | Condition | Response Payload Schema |
-| :--- | :--- | :--- |
-| **`201 Created`** | Both application and prediction persisted successfully | `{"status": "SUCCESS", "applicationId": 1001, "prediction": {"predictionId": 5001, "modelVersion": "...", "predictedClass": "G", "probabilityB": 0.20, "thresholdUsed": 0.30, "simulated": true/false}}` |
-| **`400 Bad Request`** | Input validation failed on any of the 9 features | `{"status": "VALIDATION_FAILED", "message": "...", "errors": {"INVESTMENT_TOTAL": "..."}}` |
-| **`502 Bad Gateway`** | Application was committed, but external prediction provider failed | `{"status": "PREDICTION_FAILED", "applicationId": 1001, "message": "..."}` |
-| **`500 Internal Error`** | Application database persistence failed, OR prediction record save failed | `{"status": "DATABASE_ERROR" / "PREDICTION_PERSISTENCE_FAILED", "message": "..."}` |
+## Build and tests
 
----
+Run the Python tests and Java verification against the exact checkout you intend to publish:
 
-## 9. Live Verification & Testing Results
+~~~powershell
+& ".\ml_service\.venv\Scripts\python.exe" -m unittest discover -s ".\ml_service\tests" -v
+ant test
+ant verify
+~~~
 
-All runtime verification tests were conducted against the live Apache Tomcat 10.1 server at `http://localhost:8081/Loan_Default_Risk_Prediction/`:
+Historical project notes include successful Java and Python test runs. Test counts can vary by checkout; use the actual command output for a release claim. Model-loading libraries should match the pinned package versions used for the saved artifact.
 
-| Test Case | Method & Target | Expected Result | Actual Result | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| **Health Check** | `GET /api/health` | 200 OK, mode `memory`, ML mode `mock` | HTTP 200 OK, dual mode reporting, `storedApplicationsCount: 1` | **PASS** |
-| **Frontend UI Render** | `GET /` | 200 OK, renders HTML/CSS form & disclaimer | HTTP 200 OK, rendered cleanly | **PASS** |
-| **Headless Edge DOM Render** | `msedge --dump-dom` | Full Chromium DOM parsed with all 9 features | 376 DOM lines rendered, zero console crashes | **PASS** |
-| **Standard Application Submission** | `POST /api/applications` | 201 Created, assigned IDs, `predictedClass: G` | HTTP 201 Created, `applicationId: 1001`, `predictionId: 5001`, `probB: 0.20` | **PASS** |
-| **Invalid Input Validation** | `POST /api/applications` | 400 Bad Request with field errors | HTTP 400 Bad Request with 9 field validation errors | **PASS** |
-| **In-Memory Accumulation** | `GET /api/health` | Counter increments with each submission | Confirmed count incremented from 0 to 1 | **PASS** |
-| **Zero-XSS Safe Rendering** | Static & runtime check | Zero `innerHTML` usage with untrusted dynamic data | Confirmed 100% `textContent` and DOM nodes | **PASS** |
-| **Mobile-First Responsive Layout** | CSS `@media` inspection | Single column on < 600px and < 900px | Verified `layout-grid` and `form-grid` media queries | **PASS** |
-| **Ant Repeatable Testing** | `ant test` | Compiles test classes, runs 22 tests | All 22 tests passed, build successful | **PASS** |
+## Model notes
 
----
+The current committed metadata (ml_service/models/model_metadata.json) identifies:
 
-## 10. Build & Distribution Artifact
+- Model version: v2.0
+- Selected model: **LightGBM**
+- Positive/negative classes: B / G
+- Decision threshold: approximately 0.42
+- Selection and threshold metrics: calculated on the project's validation split.
 
-- **Build Tool:** Apache Ant 1.10.14 (`ant verify` / `ant dist`)
-- **Compilation:** Clean compilation with zero errors across all core and test classes.
-- **Packaging:** Assembled into `dist/Loan_Default_Risk_Prediction.war` (187,932 bytes).
-- **Artifact Policy:** Artifact is preserved in `dist/` and has **not** been cleaned.
+The metadata reports validation ROC-AUC around **0.781** and threshold-specific validation precision/recall around **0.205 / 0.800**. These are validation results, not independent external-test performance or a guarantee about future applicants. The threshold was selected using validation data; do not present those figures as unbiased performance on unseen populations.
 
----
+Older repository documentation describes an earlier model snapshot (including Random Forest, a 0.30 threshold and historical metrics). Those figures should not be mixed with the active v2.0 LightGBM metadata. A separate prior holdout audit also reported near-chance ROC-AUC for an earlier snapshot; it is not directly comparable unless the exact model version and evaluation data are matched.
 
-## 11. Phase Roadmap
+## Limitations and responsible use
 
-- [x] **Phase 1: Read-Only Technical Reconnaissance** — Inspected workspace structure, verified installed runtimes and tools, confirmed absence of source/ML assets, and verified isolation from external projects.
-- [x] **Phase 2: Repository Foundation & Documentation** — Initialized Git repository on `main` branch, established root `.gitignore`, and authored project `README.md`.
-- [x] **Phase 4: Oracle Database Schema Preparation & Reconciliation** — Designed Oracle 10g XE schema in `database/schema.sql`, reconciled `COMPENSATION_CHARGED` as categorical, and established sequences and constraints.
-- [x] **Phase 4.1–6: Java Backend Foundation & Persistence** — Implemented layered architecture (Config, Models, DAOs, Mock ML Provider, Service, Servlets), transaction separation, and Ant packaging.
-- [x] **Phase 7–8: Runtime & JDBC Compatibility Assessment** — Discovered driver incompatibility between Java 21 / modern drivers and legacy Oracle 10g; documented requirement for compatible driver bridge.
-- [x] **Phase 9–11: Storage Abstraction, Complete Frontend & Demo Workflow** — Implemented dual storage modes (`memory` and `oracle`), built complete responsive frontend (`index.jsp`, `style.css`, `app.js`), verified live on Tomcat 10.1 with zero database prerequisites, and confirmed strict error handling.
-- [x] **Phase 12–14: HTTP ML Adapter, Automated Contract Testing & Backend Hardening** — Implemented `HttpPredictionProvider` via Java 21 `HttpClient`, created `MlConfig` and `PredictionProviderFactory` with zero silent fallback, implemented 22 unit & contract test scenarios using an in-process HTTP stub, hardened frontend UI, packaged WAR, and verified on Tomcat 10.1.
-- [x] **Phase 15–17: Release Readiness, Repeatable Testing, and ML Integration Handoff** — Added repeatable Ant targets (`test`, `verify`) with `failonerror="true"`, standardized HTTP status codes (201, 400, 500, 502), eliminated all `innerHTML` vectors for XSS safety, authored teammate integration handoff package in `docs/ml-integration-handoff.md`, preserved production WAR, and verified on Tomcat 10.1.
-- [x] **Phase 18: Simplify Architecture & Author Student Walkthrough** — Consolidated redundant DAO layer into direct repositories (eliminating `com.loanrisk.dao`), confirmed exactly 2 Servlets, authored comprehensive beginner-friendly walkthrough with viva Q&A in `docs/project-walkthrough.md`, ran `ant verify` (22/22 tests passing), and verified WAR.
-- [x] **Phase 19: Premium AI-Powered Fintech Frontend Redesign** — Redesigned frontend into a dark midnight-navy analytics UI with ambient mesh background, interactive cursor-following hero spotlight, sequence workflow indicator (`01 INPUT → 02 INFERENCE → 03 RECORD`), refined form controls with glow states, spotlight risk prediction card with probability gauge bar (30% decision threshold indicator), zero-external-dependency vanilla CSS/JS, 22/22 Ant tests passing, and verified against Tomcat 10.1.
-- [x] **Phase 19.1: Frontend Compatibility and Prediction Semantics Correction** — Restored neutral prediction semantics: replaced "risk probability" with "Class B probability", removed unsupported risk/prime labels, neutralized sample buttons to "Synthetic Example 1" and "Synthetic Example 2", ensured free-text inputs for all 5 categorical features, confirmed all 31 original JS element IDs resolve, rendered probability gauge in single consistent accent with provider-driven threshold marker, 22/22 tests passing, and verified live on Tomcat 10.1.
-- [ ] **Python ML Inference Service Deployment:** (Developed independently by teammate) Expose trained Random Forest model (`threshold=0.30`) over FastAPI `/predict` endpoint matching [`docs/ml-integration-handoff.md`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/docs/ml-integration-handoff.md).
-- [ ] **Live Oracle Database Deployment:** Provision database credentials, place compatible driver bridge in Tomcat `lib/`, execute `database/schema.sql`, and run with `LOAN_STORAGE_MODE=oracle`.
-- [ ] **End-to-End Multi-Tier Verification:** End-to-end integration test across Browser -> Tomcat -> Oracle DB -> Python FastAPI service.
+- QUALITY_OF_LOAN classes G and B remain dataset labels until their domain meaning is verified.
+- Validation metrics do not establish generalisation to a new bank, borrower population, time period or economic environment.
+- Class imbalance and distribution shift can make accuracy misleading; review precision, recall, PR-AUC, calibration and confusion matrices.
+- Threshold choice affects false positives and false negatives and should be reviewed with domain experts.
+- Do not use the prototype for actual credit approval, rejection, pricing or adverse action.
+- In-memory storage is temporary; live Oracle persistence needs an independent end-to-end test.
+- An academic demo is not a security, fairness, compliance or model-risk certification.
+
+## Documentation
+
+- [Complete architecture and pipeline guide](docs/LOANLENS_COMPLETE_ARCHITECTURE_AND_PIPELINE_GUIDE.md)
+- [ML integration handoff](docs/ml-integration-handoff.md)
+- [ML service integration and v2.0 feature contract](docs/ml-service-integration.md)
+- [Student/developer walkthrough](docs/project-walkthrough.md)
+- [Model training and comparison code](ml_service/train_models.py)
+- [Python inference service](ml_service/app/main.py)
+- [Custom preprocessing pipeline](ml_service/app/pipeline.py)
+
+## Future work
+
+1. Verify target-label meaning and document dataset provenance/sampling.
+2. Evaluate the exact released model on a representative independent holdout.
+3. Review threshold choice, probability calibration and class-imbalance-aware metrics.
+4. Add automated CI for Java and Python checks.
+5. Test Oracle connectivity and persistent workflow end to end.
+6. Document the exact working demo environment and include current screenshots.
+7. Perform security, fairness, privacy and operational reviews before any non-academic use.
+
+## License
+
+No open-source license has been confirmed for this repository. Unless a license is added by the owners, do not assume permission to reuse, modify or redistribute the project.
