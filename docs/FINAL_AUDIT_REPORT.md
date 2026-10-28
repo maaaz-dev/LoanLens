@@ -13,6 +13,8 @@
 - Refreshed the ML integration handoff and student walkthrough to describe the seven-feature v2.0 model contract.
 - Updated the service integration guide to remove stale local machine paths and clarify that class B is a dataset label rather than a verified default outcome.
 - Checked README relative links against the current GitHub file tree; the paths checked were present.
+- Added `.github/workflows/ci.yml` for Python regression/contract tests on Python 3.13 and 3.14, JavaScript syntax checks, and XML configuration parsing.
+- Verified the first GitHub Actions run passed the frontend/configuration job and both Python test jobs (Python 3.13 and 3.14).
 - Kept the existing repository history. No delete/recreate or force-push was used.
 
 ## Current implementation summary
@@ -29,7 +31,7 @@ The Java application accepts a loan-related application, validates it, records i
 
 ## Verification status
 
-This publishing pass inspected remote file contents and documentation links. It did **not** run the project on the user's Windows machine, compile a WAR, perform live Tomcat deployment or rerun Java/Python tests against the current main branch. Historical test notes remain historical until the current checkout is verified.
+This publishing pass inspected remote file contents and documentation links and added a GitHub Actions workflow. The first CI run passed Python regression/contract tests on Python 3.13 and 3.14, JavaScript syntax checks, and XML parsing. CI does **not yet** compile/test the Java application or build a WAR. This pass did not run the project on the user's Windows machine or perform live Tomcat deployment. Historical Java test notes remain historical until the current checkout is verified.
 
 Run from the project root in Windows PowerShell:
 
@@ -47,8 +49,8 @@ ant verify
 
 ## Release checklist
 
-- [ ] Current checkout's Python tests pass.
-- [ ] Current checkout's Java tests/build pass.
+- [x] Current GitHub `main` Python tests pass on Python 3.13 and 3.14 in GitHub Actions.
+- [ ] Current Java tests/build pass; not yet covered by CI or verified on the user's Windows machine.
 - [ ] /health and /model-info report the expected active model/threshold.
 - [ ] An end-to-end synthetic submission works with the configured provider.
 - [ ] Only the intended Tomcat context is deployed.
