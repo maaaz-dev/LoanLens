@@ -138,21 +138,21 @@ LoanLens is built upon six uncompromising architectural principles:
 1. **Zero External Runtime JAR Dependencies:**
    The entire server-side application compiles and executes with exactly zero third-party JARs in `WEB-INF/lib`. All functionality—JSON parsing, JSON stringification, HTTP networking, mock heuristic evaluation, and automated testing—leverages native Java 21 platform packages (`java.net.http`, `java.util.concurrent`, `java.sql`, `java.lang`) and Jakarta Servlet 6.0 interfaces.
 2. **Pluggable Dual-Storage Strategy:**
-   The persistence layer isolates data storage behind clean repository interfaces ([`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java) and [`PredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java)). Through configuration, the application seamlessly toggles between:
+   The persistence layer isolates data storage behind clean repository interfaces ([`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java) and [`PredictionRecordRepository`](../src/java/com/loanrisk/repository/PredictionRecordRepository.java)). Through configuration, the application seamlessly toggles between:
    - **`memory`**: An ultra-fast, zero-setup, thread-safe in-memory store utilizing `ConcurrentHashMap` and `AtomicLong` sequences, allowing developers and evaluators to run the complete suite without external database provisioning.
    - **`oracle`**: An enterprise JDBC persistence implementation targeting Oracle Database 10g Express Edition (XE) using explicit SQL sequences, connection lifecycle management, and transactional boundary handling.
 3. **Decoupled Polyglot AI/ML Bridge:**
-   The machine learning subsystem is decoupled behind the [`PredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java) contract. LoanLens operates in:
+   The machine learning subsystem is decoupled behind the [`PredictionProvider`](../src/java/com/loanrisk/ml/PredictionProvider.java) contract. LoanLens operates in:
    - **`mock` mode**: A deterministic, rule-based heuristic scoring engine that computes applicant default probability without any network dependencies.
-   - **`http` mode**: A production-ready HTTP adapter ([`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java)) that executes non-blocking JSON REST requests across a network boundary to an external Python/FastAPI microservice executing a scikit-learn/LightGBM model.
+   - **`http` mode**: A production-ready HTTP adapter ([`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java)) that executes non-blocking JSON REST requests across a network boundary to an external Python/FastAPI microservice executing a scikit-learn/LightGBM model.
 4. **Fail-Fast Strict Configuration (The Anti-Fallback Rule):**
    LoanLens strictly rejects "silent fallbacks." If the operator configures `LOAN_STORAGE_MODE=oracle` and Oracle database credentials or connectivity fail, or if `LOAN_ML_MODE=http` and the remote service is unreachable, the system **immediately halts and fails fast with actionable diagnostics**. It never silently reverts to in-memory mode or mock mode, preventing undetected data corruption or false operational assumptions.
 5. **Decoupled Service-Oriented Transaction Boundary:**
    To protect the database connection pool against slow network connections to external AI services, LoanLens strictly decouples database persistence from machine learning inference. When a loan application is received, it is validated and **persisted to the primary repository first**. The external AI prediction call is executed outside any open database transaction. If the ML service fails (network timeout or crash), the application record is preserved in storage with an audit state, and the client receives an HTTP 502 Bad Gateway containing the persistent `applicationId`.
 6. **Cinematic, Dual-View Frontend Architecture:**
    The user interface is split into two specialized views:
-   - [`index.jsp`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/index.jsp): An immersive, cinematic product landing and narrative page featuring glassmorphism, animated ambient mesh gradients, interactive product feature cards, and dynamic CTA navigation.
-   - [`workspace.jsp`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/workspace.jsp): A high-density, mission-critical underwriting workbench equipped with the 9-feature loan form, instant one-click synthetic applicant presets ("Low Risk Applicant" and "High Risk Applicant"), an animated SVG probability gauge, categorical risk badging, and a real-time audit ledger.
+   - [`index.jsp`](../web/index.jsp): An immersive, cinematic product landing and narrative page featuring glassmorphism, animated ambient mesh gradients, interactive product feature cards, and dynamic CTA navigation.
+   - [`workspace.jsp`](../web/workspace.jsp): A high-density, mission-critical underwriting workbench equipped with the 9-feature loan form, instant one-click synthetic applicant presets ("Low Risk Applicant" and "High Risk Applicant"), an animated SVG probability gauge, categorical risk badging, and a real-time audit ledger.
 
 ### 1.4 Complete Technology Stack Reference
 
@@ -194,50 +194,50 @@ Every file in the `D:\Projects\Loan Default Risk Prediction` repository is categ
 
 | # | Relative Path | Architectural Layer | Lines | Technical Role and Description |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | [`src/java/com/loanrisk/config/DatabaseConfig.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java) | Configuration | 85 | Resolves JDBC URL, username, password, and driver class from system properties/environment variables; validates credentials and creates `java.sql.Connection`. |
-| 2 | [`src/java/com/loanrisk/config/StorageConfig.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java) | Configuration | 86 | Enforces 3-tier precedence (`loan.storage.mode` -> `LOAN_STORAGE_MODE` -> context param) for storage mode (`memory` vs `oracle`); strictly rejects invalid modes. |
-| 3 | [`src/java/com/loanrisk/config/MlConfig.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java) | Configuration | 158 | Enforces 3-tier precedence for ML mode (`mock` vs `http`) and validates remote base URL (`http://...` or `https://...`), connection timeouts, and read timeouts. |
-| 4 | [`src/java/com/loanrisk/model/LoanApplication.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java) | Domain Model | 162 | Core POJO entity representing a loan submission with 9 underwriting features, surrogate key `applicationId`, submission timestamp, and status. |
-| 5 | [`src/java/com/loanrisk/model/PredictionRecord.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java) | Domain Model | 118 | Core POJO entity representing the outcome of an AI inference: `predictionId`, `applicationId`, `predictedClass`, `probabilityB`, `modelVersion`, and `simulated` flag. |
-| 6 | [`src/java/com/loanrisk/service/ValidationResult.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ValidationResult.java) | Service / Domain | 33 | Immutable-style error accumulator storing a list of validation failure messages; provides `addError()`, `isValid()`, and `getErrors()`. |
-| 7 | [`src/java/com/loanrisk/service/ApplicationProcessingResult.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java) | Service / Domain | 89 | Discriminated union result pattern capturing the 5 possible states of application processing (`SUCCESS`, `VALIDATION_FAILED`, `DATABASE_ERROR`, `PREDICTION_FAILED`, `PREDICTION_PERSISTENCE_FAILED`). |
-| 8 | [`src/java/com/loanrisk/service/LoanApplicationService.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) | Service Orchestration | 187 | Central business orchestrator; coordinates validation, primary application persistence, ML prediction execution, and prediction record persistence. |
-| 9 | [`src/java/com/loanrisk/ml/PredictionException.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionException.java) | ML Abstraction | 17 | Custom unchecked exception thrown when machine learning prediction fails due to network outage, HTTP error, timeout, or payload parsing issues. |
-| 10 | [`src/java/com/loanrisk/ml/PredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java) | ML Abstraction | 27 | Core Strategy interface defining `predict(LoanApplication)`, `isAvailable()`, and `getProviderName()`. |
-| 11 | [`src/java/com/loanrisk/ml/MockPredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java) | ML Implementation | 74 | Deterministic, offline heuristic prediction provider computing risk scores and default probabilities based on applicant financial ratios. |
-| 12 | [`src/java/com/loanrisk/ml/HttpPredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java) | ML Implementation | 230 | Production HTTP adapter communicating with external Python/FastAPI ML service via standard `java.net.http.HttpClient` with strict timeouts and error mapping. |
-| 13 | [`src/java/com/loanrisk/ml/PredictionProviderFactory.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java) | ML Abstraction | 26 | Factory producing either `MockPredictionProvider` or `HttpPredictionProvider` based on active configuration in `MlConfig`. |
-| 14 | [`src/java/com/loanrisk/repository/StorageException.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/StorageException.java) | Persistence Abstraction | 18 | Custom unchecked exception thrown when repository operations encounter SQL, connectivity, or internal data store failures. |
-| 15 | [`src/java/com/loanrisk/repository/LoanApplicationRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java) | Persistence Abstraction | 39 | Repository interface declaring persistence operations (`save`, `findById`, `findAll`, `count`) for `LoanApplication` entities. |
-| 16 | [`src/java/com/loanrisk/repository/PredictionRecordRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java) | Persistence Abstraction | 34 | Repository interface declaring persistence operations (`save`, `findByApplicationId`, `findAll`, `count`) for `PredictionRecord` entities. |
-| 17 | [`src/java/com/loanrisk/repository/RepositoryFactory.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java) | Persistence Abstraction | 52 | Factory producing either In-Memory or Oracle repository singleton instances based on active configuration in `StorageConfig`. |
-| 18 | [`src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) | Persistence Impl | 89 | Thread-safe, lock-free volatile implementation of `LoanApplicationRepository` backed by `ConcurrentHashMap` and an `AtomicLong` starting at 1000. |
-| 19 | [`src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java) | Persistence Impl | 81 | Thread-safe volatile implementation of `PredictionRecordRepository` backed by `ConcurrentHashMap` and an `AtomicLong` starting at 5000. |
-| 20 | [`src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java) | Persistence Impl | 166 | Enterprise JDBC implementation of `LoanApplicationRepository` targeting Oracle 10g XE using `LOAN_APPLICATION_SEQ.NEXTVAL` and parameterized SQL. |
-| 21 | [`src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java) | Persistence Impl | 129 | Enterprise JDBC implementation of `PredictionRecordRepository` targeting Oracle 10g XE using `PREDICTION_RECORD_SEQ.NEXTVAL`. |
-| 22 | [`src/java/com/loanrisk/util/JsonUtil.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java) | Utilities | 165 | Lightweight zero-dependency JSON parser and serializer handling flat key-value object parsing, string escaping, and primitive type conversion. |
-| 23 | [`src/java/com/loanrisk/web/AppLifecycleListener.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/AppLifecycleListener.java) | Web Infrastructure | 41 | `@WebListener` capturing container startup; reads `web.xml` context parameters to initialize default storage and ML modes. |
-| 24 | [`src/java/com/loanrisk/web/HealthServlet.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java) | Web Controller | 147 | `@WebServlet("/api/health")` performing deep diagnostics on both storage and ML subsystems, returning HTTP 200 (healthy) or 503 (unhealthy). |
-| 25 | [`src/java/com/loanrisk/web/LoanApplicationServlet.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java) | Web Controller | 202 | `@WebServlet("/api/applications")` handling POST submissions (JSON parsing -> service execution -> HTTP 201/400/500/502) and GET listings. |
-| 26 | [`test/com/loanrisk/test/TestRunner.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/TestRunner.java) | Automated Testing | 69 | Standalone test runner with `main()` executing all test suites, tracking timings, assertions, and printing colored ANSI terminal summaries. |
-| 27 | [`test/com/loanrisk/test/ConfigurationTest.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java) | Automated Testing | 172 | Verifies 3-tier configuration resolution, fallback prevention, URL validation, and environment isolation for `StorageConfig` and `MlConfig`. |
-| 28 | [`test/com/loanrisk/test/HttpPredictionProviderTest.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/HttpPredictionProviderTest.java) | Automated Testing | 276 | Verifies `HttpPredictionProvider` against an in-process `com.sun.net.httpserver.HttpServer`, testing HTTP 200, 500, timeouts, and JSON errors. |
-| 29 | [`test/com/loanrisk/test/ApplicationWorkflowTest.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ApplicationWorkflowTest.java) | Automated Testing | 193 | Verifies end-to-end service orchestration: validation passes/failures, in-memory persistence, mock prediction scoring, and result mapping. |
-| 30 | [`web/index.html`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/index.html) | Presentation | 11 | Lightweight HTML redirect with meta-refresh pointing root traffic to `index.jsp`. |
-| 31 | [`web/index.jsp`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/index.jsp) | Presentation | 292 | Cinematic LoanLens product overview landing page; dark-mode aesthetics, feature showcases, statistical highlights, and workspace navigation CTA. |
-| 32 | [`web/workspace.jsp`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/workspace.jsp) | Presentation | 378 | Underwriting workspace; contains the 9-feature loan form, synthetic sample presets, animated SVG risk gauge, risk badge, and audit ledger. |
-| 33 | [`web/css/style.css`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/css/style.css) | Presentation | 2002 | Complete unified design system stylesheet: midnight-navy palette, CSS variables, glassmorphism, responsive grid, animations, and gauge styling. |
-| 34 | [`web/js/intro.js`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/js/intro.js) | Presentation | 119 | Interactive JavaScript for `index.jsp`: smooth scroll-reveals, interactive cards, and parallax motion. |
-| 35 | [`web/js/app.js`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/js/app.js) | Presentation | 427 | Core client-side application logic: form submission, JSON payload construction, fetch requests, dynamic DOM rendering, SVG gauge math. |
-| 36 | [`web/WEB-INF/web.xml`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/WEB-INF/web.xml) | Deployment | 23 | Web deployment descriptor defining application metadata, welcome files, and servlet context initialization parameters. |
-| 37 | [`web/META-INF/context.xml`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/META-INF/context.xml) | Deployment | 2 | Tomcat context definition setting `antiResourceLocking="false"` for rapid redeployment. |
-| 38 | [`database/schema.sql`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/database/schema.sql) | Database | 95 | Oracle 10g DDL script defining tables `LOAN_APPLICATION`, `PREDICTION_RECORD`, sequences, check constraints, and performance indexes. |
-| 39 | [`build.xml`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/build.xml) | Build Harness | 69 | Apache Ant build script configuring compilation, dependency-free testing (`verify`), WAR packaging, and deployment paths. |
-| 40 | [`nbproject/project.properties`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/nbproject/project.properties) | Project Config | 82 | NetBeans/Ant properties specifying Java source/target (21), Tomcat 10.1 web platform, distribution paths, and compiler flags. |
-| 41 | [`nbproject/project.xml`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/nbproject/project.xml) | Project Config | 18 | NetBeans project metadata declaring the project type as standard J2EE web application. |
-| 42 | [`nbproject/build-impl.xml`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/nbproject/build-impl.xml) | Build Harness | 1427 | Standard NetBeans Ant build implementation harness managing incremental compilation and servlet container integration. |
-| 43 | [`docs/ml-integration-handoff.md`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/docs/ml-integration-handoff.md) | Documentation | 338 | Official interface contract specification for the Python/FastAPI microservice team detailing JSON schemas and operational guidelines. |
-| 44 | [`docs/project-walkthrough.md`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/docs/project-walkthrough.md) | Documentation | 480 | High-level developer walkthrough and code tour document created in earlier project milestones. |
+| 1 | [`src/java/com/loanrisk/config/DatabaseConfig.java`](../src/java/com/loanrisk/config/DatabaseConfig.java) | Configuration | 85 | Resolves JDBC URL, username, password, and driver class from system properties/environment variables; validates credentials and creates `java.sql.Connection`. |
+| 2 | [`src/java/com/loanrisk/config/StorageConfig.java`](../src/java/com/loanrisk/config/StorageConfig.java) | Configuration | 86 | Enforces 3-tier precedence (`loan.storage.mode` -> `LOAN_STORAGE_MODE` -> context param) for storage mode (`memory` vs `oracle`); strictly rejects invalid modes. |
+| 3 | [`src/java/com/loanrisk/config/MlConfig.java`](../src/java/com/loanrisk/config/MlConfig.java) | Configuration | 158 | Enforces 3-tier precedence for ML mode (`mock` vs `http`) and validates remote base URL (`http://...` or `https://...`), connection timeouts, and read timeouts. |
+| 4 | [`src/java/com/loanrisk/model/LoanApplication.java`](../src/java/com/loanrisk/model/LoanApplication.java) | Domain Model | 162 | Core POJO entity representing a loan submission with 9 underwriting features, surrogate key `applicationId`, submission timestamp, and status. |
+| 5 | [`src/java/com/loanrisk/model/PredictionRecord.java`](../src/java/com/loanrisk/model/PredictionRecord.java) | Domain Model | 118 | Core POJO entity representing the outcome of an AI inference: `predictionId`, `applicationId`, `predictedClass`, `probabilityB`, `modelVersion`, and `simulated` flag. |
+| 6 | [`src/java/com/loanrisk/service/ValidationResult.java`](../src/java/com/loanrisk/service/ValidationResult.java) | Service / Domain | 33 | Immutable-style error accumulator storing a list of validation failure messages; provides `addError()`, `isValid()`, and `getErrors()`. |
+| 7 | [`src/java/com/loanrisk/service/ApplicationProcessingResult.java`](../src/java/com/loanrisk/service/ApplicationProcessingResult.java) | Service / Domain | 89 | Discriminated union result pattern capturing the 5 possible states of application processing (`SUCCESS`, `VALIDATION_FAILED`, `DATABASE_ERROR`, `PREDICTION_FAILED`, `PREDICTION_PERSISTENCE_FAILED`). |
+| 8 | [`src/java/com/loanrisk/service/LoanApplicationService.java`](../src/java/com/loanrisk/service/LoanApplicationService.java) | Service Orchestration | 187 | Central business orchestrator; coordinates validation, primary application persistence, ML prediction execution, and prediction record persistence. |
+| 9 | [`src/java/com/loanrisk/ml/PredictionException.java`](../src/java/com/loanrisk/ml/PredictionException.java) | ML Abstraction | 17 | Custom unchecked exception thrown when machine learning prediction fails due to network outage, HTTP error, timeout, or payload parsing issues. |
+| 10 | [`src/java/com/loanrisk/ml/PredictionProvider.java`](../src/java/com/loanrisk/ml/PredictionProvider.java) | ML Abstraction | 27 | Core Strategy interface defining `predict(LoanApplication)`, `isAvailable()`, and `getProviderName()`. |
+| 11 | [`src/java/com/loanrisk/ml/MockPredictionProvider.java`](../src/java/com/loanrisk/ml/MockPredictionProvider.java) | ML Implementation | 74 | Deterministic, offline heuristic prediction provider computing risk scores and default probabilities based on applicant financial ratios. |
+| 12 | [`src/java/com/loanrisk/ml/HttpPredictionProvider.java`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java) | ML Implementation | 230 | Production HTTP adapter communicating with external Python/FastAPI ML service via standard `java.net.http.HttpClient` with strict timeouts and error mapping. |
+| 13 | [`src/java/com/loanrisk/ml/PredictionProviderFactory.java`](../src/java/com/loanrisk/ml/PredictionProviderFactory.java) | ML Abstraction | 26 | Factory producing either `MockPredictionProvider` or `HttpPredictionProvider` based on active configuration in `MlConfig`. |
+| 14 | [`src/java/com/loanrisk/repository/StorageException.java`](../src/java/com/loanrisk/repository/StorageException.java) | Persistence Abstraction | 18 | Custom unchecked exception thrown when repository operations encounter SQL, connectivity, or internal data store failures. |
+| 15 | [`src/java/com/loanrisk/repository/LoanApplicationRepository.java`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java) | Persistence Abstraction | 39 | Repository interface declaring persistence operations (`save`, `findById`, `findAll`, `count`) for `LoanApplication` entities. |
+| 16 | [`src/java/com/loanrisk/repository/PredictionRecordRepository.java`](../src/java/com/loanrisk/repository/PredictionRecordRepository.java) | Persistence Abstraction | 34 | Repository interface declaring persistence operations (`save`, `findByApplicationId`, `findAll`, `count`) for `PredictionRecord` entities. |
+| 17 | [`src/java/com/loanrisk/repository/RepositoryFactory.java`](../src/java/com/loanrisk/repository/RepositoryFactory.java) | Persistence Abstraction | 52 | Factory producing either In-Memory or Oracle repository singleton instances based on active configuration in `StorageConfig`. |
+| 18 | [`src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java`](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) | Persistence Impl | 89 | Thread-safe, lock-free volatile implementation of `LoanApplicationRepository` backed by `ConcurrentHashMap` and an `AtomicLong` starting at 1000. |
+| 19 | [`src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java`](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java) | Persistence Impl | 81 | Thread-safe volatile implementation of `PredictionRecordRepository` backed by `ConcurrentHashMap` and an `AtomicLong` starting at 5000. |
+| 20 | [`src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java) | Persistence Impl | 166 | Enterprise JDBC implementation of `LoanApplicationRepository` targeting Oracle 10g XE using `LOAN_APPLICATION_SEQ.NEXTVAL` and parameterized SQL. |
+| 21 | [`src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java`](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java) | Persistence Impl | 129 | Enterprise JDBC implementation of `PredictionRecordRepository` targeting Oracle 10g XE using `PREDICTION_RECORD_SEQ.NEXTVAL`. |
+| 22 | [`src/java/com/loanrisk/util/JsonUtil.java`](../src/java/com/loanrisk/util/JsonUtil.java) | Utilities | 165 | Lightweight zero-dependency JSON parser and serializer handling flat key-value object parsing, string escaping, and primitive type conversion. |
+| 23 | [`src/java/com/loanrisk/web/AppLifecycleListener.java`](../src/java/com/loanrisk/web/AppLifecycleListener.java) | Web Infrastructure | 41 | `@WebListener` capturing container startup; reads `web.xml` context parameters to initialize default storage and ML modes. |
+| 24 | [`src/java/com/loanrisk/web/HealthServlet.java`](../src/java/com/loanrisk/web/HealthServlet.java) | Web Controller | 147 | `@WebServlet("/api/health")` performing deep diagnostics on both storage and ML subsystems, returning HTTP 200 (healthy) or 503 (unhealthy). |
+| 25 | [`src/java/com/loanrisk/web/LoanApplicationServlet.java`](../src/java/com/loanrisk/web/LoanApplicationServlet.java) | Web Controller | 202 | `@WebServlet("/api/applications")` handling POST submissions (JSON parsing -> service execution -> HTTP 201/400/500/502) and GET listings. |
+| 26 | [`test/com/loanrisk/test/TestRunner.java`](../test/com/loanrisk/test/TestRunner.java) | Automated Testing | 69 | Standalone test runner with `main()` executing all test suites, tracking timings, assertions, and printing colored ANSI terminal summaries. |
+| 27 | [`test/com/loanrisk/test/ConfigurationTest.java`](../test/com/loanrisk/test/ConfigurationTest.java) | Automated Testing | 172 | Verifies 3-tier configuration resolution, fallback prevention, URL validation, and environment isolation for `StorageConfig` and `MlConfig`. |
+| 28 | [`test/com/loanrisk/test/HttpPredictionProviderTest.java`](../test/com/loanrisk/test/HttpPredictionProviderTest.java) | Automated Testing | 276 | Verifies `HttpPredictionProvider` against an in-process `com.sun.net.httpserver.HttpServer`, testing HTTP 200, 500, timeouts, and JSON errors. |
+| 29 | [`test/com/loanrisk/test/ApplicationWorkflowTest.java`](../test/com/loanrisk/test/ApplicationWorkflowTest.java) | Automated Testing | 193 | Verifies end-to-end service orchestration: validation passes/failures, in-memory persistence, mock prediction scoring, and result mapping. |
+| 30 | [`web/index.html`](../web/index.html) | Presentation | 11 | Lightweight HTML redirect with meta-refresh pointing root traffic to `index.jsp`. |
+| 31 | [`web/index.jsp`](../web/index.jsp) | Presentation | 292 | Cinematic LoanLens product overview landing page; dark-mode aesthetics, feature showcases, statistical highlights, and workspace navigation CTA. |
+| 32 | [`web/workspace.jsp`](../web/workspace.jsp) | Presentation | 378 | Underwriting workspace; contains the 9-feature loan form, synthetic sample presets, animated SVG risk gauge, risk badge, and audit ledger. |
+| 33 | [`web/css/style.css`](../web/css/style.css) | Presentation | 2002 | Complete unified design system stylesheet: midnight-navy palette, CSS variables, glassmorphism, responsive grid, animations, and gauge styling. |
+| 34 | [`web/js/intro.js`](../web/js/intro.js) | Presentation | 119 | Interactive JavaScript for `index.jsp`: smooth scroll-reveals, interactive cards, and parallax motion. |
+| 35 | [`web/js/app.js`](../web/js/app.js) | Presentation | 427 | Core client-side application logic: form submission, JSON payload construction, fetch requests, dynamic DOM rendering, SVG gauge math. |
+| 36 | [`web/WEB-INF/web.xml`](../web/WEB-INF/web.xml) | Deployment | 23 | Web deployment descriptor defining application metadata, welcome files, and servlet context initialization parameters. |
+| 37 | [`web/META-INF/context.xml`](../web/META-INF/context.xml) | Deployment | 2 | Tomcat context definition setting `antiResourceLocking="false"` for rapid redeployment. |
+| 38 | [`database/schema.sql`](../database/schema.sql) | Database | 95 | Oracle 10g DDL script defining tables `LOAN_APPLICATION`, `PREDICTION_RECORD`, sequences, check constraints, and performance indexes. |
+| 39 | [`build.xml`](../build.xml) | Build Harness | 69 | Apache Ant build script configuring compilation, dependency-free testing (`verify`), WAR packaging, and deployment paths. |
+| 40 | [`nbproject/project.properties`](../nbproject/project.properties) | Project Config | 82 | NetBeans/Ant properties specifying Java source/target (21), Tomcat 10.1 web platform, distribution paths, and compiler flags. |
+| 41 | [`nbproject/project.xml`](../nbproject/project.xml) | Project Config | 18 | NetBeans project metadata declaring the project type as standard J2EE web application. |
+| 42 | [`nbproject/build-impl.xml`](../nbproject/build-impl.xml) | Build Harness | 1427 | Standard NetBeans Ant build implementation harness managing incremental compilation and servlet container integration. |
+| 43 | [`docs/ml-integration-handoff.md`](../docs/ml-integration-handoff.md) | Documentation | 338 | Official interface contract specification for the Python/FastAPI microservice team detailing JSON schemas and operational guidelines. |
+| 44 | [`docs/project-walkthrough.md`](../docs/project-walkthrough.md) | Documentation | 480 | High-level developer walkthrough and code tour document created in earlier project milestones. |
 
 ### 2.2 Directory Hierarchy and Architectural Roles
 
@@ -355,14 +355,14 @@ LoanLens strictly enforces a **Five-Tier Layered Architecture**. Each layer main
    Executes entirely within the client browser. Built without frontend dependencies. Interacts with the backend purely through asynchronous JSON HTTP requests (`fetch`). Translates user actions into structured payloads and converts backend JSON responses into dynamic UI updates, SVG radial gauge animations, and categorical risk badges.
 2. **Web Controller Layer (`com.loanrisk.web`):**
    Composed of Jakarta Servlets mapped via `@WebServlet` annotations. Servlets do **not** contain business validation rules or database queries. Their sole purpose is:
-   - Extracting and parsing the raw JSON request body via [`JsonUtil`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java).
-   - Coercing JSON tokens into typed domain model objects ([`LoanApplication`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java)).
-   - Invoking the domain service ([`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java)).
-   - Translating the service result ([`ApplicationProcessingResult`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java)) into the appropriate HTTP status code (`201`, `400`, `500`, `502`) and serialized JSON response.
+   - Extracting and parsing the raw JSON request body via [`JsonUtil`](../src/java/com/loanrisk/util/JsonUtil.java).
+   - Coercing JSON tokens into typed domain model objects ([`LoanApplication`](../src/java/com/loanrisk/model/LoanApplication.java)).
+   - Invoking the domain service ([`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java)).
+   - Translating the service result ([`ApplicationProcessingResult`](../src/java/com/loanrisk/service/ApplicationProcessingResult.java)) into the appropriate HTTP status code (`201`, `400`, `500`, `502`) and serialized JSON response.
 3. **Core Service & Domain Layer (`com.loanrisk.service`, `com.loanrisk.model`):**
-   Encapsulates all business rules, mathematical validation checks, and process workflows. The service layer is completely isolated from HTTP concerns (it has no references to `HttpServletRequest` or `HttpServletResponse`). It operates exclusively on domain POJOs and returns a rich [`ApplicationProcessingResult`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java) object.
+   Encapsulates all business rules, mathematical validation checks, and process workflows. The service layer is completely isolated from HTTP concerns (it has no references to `HttpServletRequest` or `HttpServletResponse`). It operates exclusively on domain POJOs and returns a rich [`ApplicationProcessingResult`](../src/java/com/loanrisk/service/ApplicationProcessingResult.java) object.
 4. **Integration & Persistence Abstraction Layer (`com.loanrisk.repository`, `com.loanrisk.ml`, `com.loanrisk.util`):**
-   Defines the contracts and behavioral interfaces governing data persistence and AI inference. Implements the **Strategy Pattern** and **Factory Pattern** ([`RepositoryFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java), [`PredictionProviderFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java)). High-level domain services depend exclusively on these abstractions, completely unaware of whether physical storage is an in-memory hash map or an Oracle cluster.
+   Defines the contracts and behavioral interfaces governing data persistence and AI inference. Implements the **Strategy Pattern** and **Factory Pattern** ([`RepositoryFactory`](../src/java/com/loanrisk/repository/RepositoryFactory.java), [`PredictionProviderFactory`](../src/java/com/loanrisk/ml/PredictionProviderFactory.java)). High-level domain services depend exclusively on these abstractions, completely unaware of whether physical storage is an in-memory hash map or an Oracle cluster.
 5. **Physical Implementation Layer (`com.loanrisk.repository.memory`, `com.loanrisk.repository.oracle`, `com.loanrisk.ml`):**
    Implements physical communication with external storage engines and network microservices. Handles raw SQL parameter binding, sequence extraction, network timeouts, JSON parsing of remote responses, and socket management.
 
@@ -371,9 +371,9 @@ LoanLens strictly enforces a **Five-Tier Layered Architecture**. Each layer main
 LoanLens strictly enforces the **Dependency Inversion Principle (DIP)**:
 > *High-level modules should not depend on low-level modules. Both should depend on abstractions.*
 
-- [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) depends directly on [`LoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java), [`PredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java), and [`PredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java). It has **zero imports** from `com.loanrisk.repository.memory`, `com.loanrisk.repository.oracle`, or `com.loanrisk.ml.HttpPredictionProvider`.
+- [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java) depends directly on [`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java), [`PredictionRecordRepository`](../src/java/com/loanrisk/repository/PredictionRecordRepository.java), and [`PredictionProvider`](../src/java/com/loanrisk/ml/PredictionProvider.java). It has **zero imports** from `com.loanrisk.repository.memory`, `com.loanrisk.repository.oracle`, or `com.loanrisk.ml.HttpPredictionProvider`.
 - All repository implementations and ML providers can be swapped, mocked, or updated without changing a single line of business orchestration code.
-- Dependencies are supplied to [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) via **Constructor Injection**:
+- Dependencies are supplied to [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java) via **Constructor Injection**:
   ```java
   public LoanApplicationService(
           LoanApplicationRepository applicationRepository,
@@ -473,8 +473,8 @@ The execution of a loan evaluation request proceeds through an exact, determinis
 ```
 
 #### Step 0: User Interaction and Payload Construction (`workspace.jsp` & `app.js`)
-1. The user fills out the 9 input fields on [`workspace.jsp`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/workspace.jsp) (or clicks a preset like "Low Risk Applicant").
-2. The user clicks the submit button. In [`web/js/app.js`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/js/app.js), the `'submit'` event listener captures the event and invokes `event.preventDefault()`.
+1. The user fills out the 9 input fields on [`workspace.jsp`](../web/workspace.jsp) (or clicks a preset like "Low Risk Applicant").
+2. The user clicks the submit button. In [`web/js/app.js`](../web/js/app.js), the `'submit'` event listener captures the event and invokes `event.preventDefault()`.
 3. The client sets the UI to a loading state: the submit button is disabled, a loading spinner activates, and any previous error banners are cleared.
 4. `app.js` reads the DOM inputs by their exact IDs (`investmentTotal`, `accCurrentBalance`, etc.) and constructs a JavaScript object:
    ```javascript
@@ -495,14 +495,14 @@ The execution of a loan evaluation request proceeds through an exact, determinis
 #### Step 1: Network Ingress and Tomcat Connector Routing
 1. The HTTP POST packet arrives at Tomcat on port `8081`.
 2. Tomcat's HTTP/1.1 connector allocates a worker thread from its thread pool (e.g., `http-nio-8081-exec-4`).
-3. Tomcat matches the URI path `/api/applications` against registered servlets and routes the request to [`LoanApplicationServlet.doPost()`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L80-L150).
+3. Tomcat matches the URI path `/api/applications` against registered servlets and routes the request to [`LoanApplicationServlet.doPost()`](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L80-L150).
 
 #### Step 2: Servlet Ingress, Custom JSON Parsing, and DTO Binding
 1. `LoanApplicationServlet.doPost()` sets response headers: `Content-Type: application/json; charset=UTF-8`.
 2. The servlet reads the raw HTTP request body character-by-character from `request.getReader()` using a `StringBuilder`.
 3. If the body is empty or whitespace-only, the servlet immediately halts and emits an HTTP 400 Bad Request: `{"status":"error","message":"Request body cannot be empty"}`.
-4. The servlet invokes [`JsonUtil.parseFlatJsonObject(rawBody)`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java#L58-L125). This lightweight parser tokenizes the JSON without third-party libraries, returning a `Map<String, String>`.
-5. The servlet instantiates a fresh [`LoanApplication`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java) model object and defensively parses the map values:
+4. The servlet invokes [`JsonUtil.parseFlatJsonObject(rawBody)`](../src/java/com/loanrisk/util/JsonUtil.java#L58-L125). This lightweight parser tokenizes the JSON without third-party libraries, returning a `Map<String, String>`.
+5. The servlet instantiates a fresh [`LoanApplication`](../src/java/com/loanrisk/model/LoanApplication.java) model object and defensively parses the map values:
    - Floating-point fields (`investmentTotal`, `accCurrentBalance`, `installSize`, `duePayment`) are parsed via `Double.parseDouble()`. If a number format exception occurs, an HTTP 400 is returned immediately.
    - Categorical fields (`infMaritalStatus`, `infGender`, `compensationCharged`, `clientType`, `repayMode`) are trimmed and stored as clean strings.
 
@@ -513,7 +513,7 @@ The execution of a loan evaluation request proceeds through an exact, determinis
    ```
 
 #### Step 4: Strict Domain Rule Validation (`LoanApplicationService.validate()`)
-1. [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) instantiates a [`ValidationResult`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ValidationResult.java) error accumulator.
+1. [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java) instantiates a [`ValidationResult`](../src/java/com/loanrisk/service/ValidationResult.java) error accumulator.
 2. It executes mathematical and domain constraint checks across all 9 fields:
    - `investmentTotal`: Must not be null, must be `> 0.0`, and must not exceed `100,000,000.0`.
    - `accCurrentBalance`: Must not be null and must be `>= 0.0`.
@@ -532,21 +532,21 @@ The execution of a loan evaluation request proceeds through an exact, determinis
 2. The application submission timestamp is set: `application.setSubmissionTimestamp(Instant.now())`.
 3. The initial application status is marked as `"SUBMITTED"`.
 4. The service invokes `applicationRepository.save(application)`:
-   - In **`memory` mode**: [`InMemoryLoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) fetches the next ID from an `AtomicLong` (starting at 1001), assigns `application.setApplicationId(id)`, and stores the object in a `ConcurrentHashMap<Long, LoanApplication>`.
-   - In **`oracle` mode**: [`OracleLoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java) executes `SELECT LOAN_APPLICATION_SEQ.NEXTVAL FROM DUAL`, assigns the resulting sequence value, and executes an `INSERT INTO LOAN_APPLICATION (...) VALUES (...)` using a `PreparedStatement`.
+   - In **`memory` mode**: [`InMemoryLoanApplicationRepository`](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) fetches the next ID from an `AtomicLong` (starting at 1001), assigns `application.setApplicationId(id)`, and stores the object in a `ConcurrentHashMap<Long, LoanApplication>`.
+   - In **`oracle` mode**: [`OracleLoanApplicationRepository`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java) executes `SELECT LOAN_APPLICATION_SEQ.NEXTVAL FROM DUAL`, assigns the resulting sequence value, and executes an `INSERT INTO LOAN_APPLICATION (...) VALUES (...)` using a `PreparedStatement`.
 5. If a database error occurs (e.g., table missing, constraint violation, connection lost), a `StorageException` is caught, and the service returns `ApplicationProcessingResult.databaseError(msg)`.
 
 #### Step 6: Decoupled AI Machine Learning Inference (`predictionProvider.predict()`)
 1. With the loan application safely committed in primary storage, the service proceeds to AI evaluation.
 2. Crucially, **this invocation occurs outside any open database transaction**, ensuring slow network responses do not exhaust database connections.
 3. The service invokes `predictionProvider.predict(application)`:
-   - In **`mock` mode**: [`MockPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java) executes a deterministic mathematical formula combining debt-to-balance ratio, installment-to-investment ratio, past-due payment severity, and client type risk adjustments. It calculates `probabilityB` and assigns class `'B'` if `probabilityB >= 0.3000`, else `'G'`.
-   - In **`http` mode**: [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java) serializes the application's 9 features into JSON, builds a standard `java.net.http.HttpRequest` targeting the remote Python service (e.g. `http://localhost:8000/predict`), and dispatches it with a 5-second timeout. It parses the Python service's JSON response containing `predicted_class`, `probability_b`, `model_version`, and `threshold_used`.
+   - In **`mock` mode**: [`MockPredictionProvider`](../src/java/com/loanrisk/ml/MockPredictionProvider.java) executes a deterministic mathematical formula combining debt-to-balance ratio, installment-to-investment ratio, past-due payment severity, and client type risk adjustments. It calculates `probabilityB` and assigns class `'B'` if `probabilityB >= 0.3000`, else `'G'`.
+   - In **`http` mode**: [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java) serializes the application's 9 features into JSON, builds a standard `java.net.http.HttpRequest` targeting the remote Python service (e.g. `http://localhost:8000/predict`), and dispatches it with a 5-second timeout. It parses the Python service's JSON response containing `predicted_class`, `probability_b`, `model_version`, and `threshold_used`.
 4. If the ML inference fails (e.g., Python service crashed, network timeout, connection refused, invalid JSON response), a `PredictionException` is caught.
 5. The service constructs `ApplicationProcessingResult.predictionFailed(application, errorDetails)`. The saved `applicationId` is retained so the client and auditors know the application was received, but AI scoring was unavailable.
 
 #### Step 7: Secondary Prediction Record Persistence (`predictionRepository.save()`)
-1. Upon successful inference, the service constructs a [`PredictionRecord`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java) POJO:
+1. Upon successful inference, the service constructs a [`PredictionRecord`](../src/java/com/loanrisk/model/PredictionRecord.java) POJO:
    - `applicationId`: Bound to the primary loan application's ID.
    - `predictedClass`: `'G'` or `'B'`.
    - `probabilityB`: Calibrated probability float (e.g. `0.7850`).
@@ -555,8 +555,8 @@ The execution of a loan evaluation request proceeds through an exact, determinis
    - `predictionTimestamp`: `Instant.now()`.
    - `simulated`: `true` if mock mode, `false` if live HTTP mode.
 2. The service invokes `predictionRepository.save(predictionRecord)`:
-   - In **`memory` mode**: [`InMemoryPredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java) generates a prediction ID from an `AtomicLong` (starting at 5001) and stores the record in a `ConcurrentHashMap<Long, PredictionRecord>`.
-   - In **`oracle` mode**: [`OraclePredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java) queries `PREDICTION_RECORD_SEQ.NEXTVAL` and executes an `INSERT INTO PREDICTION_RECORD (...) VALUES (...)`.
+   - In **`memory` mode**: [`InMemoryPredictionRecordRepository`](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java) generates a prediction ID from an `AtomicLong` (starting at 5001) and stores the record in a `ConcurrentHashMap<Long, PredictionRecord>`.
+   - In **`oracle` mode**: [`OraclePredictionRecordRepository`](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java) queries `PREDICTION_RECORD_SEQ.NEXTVAL` and executes an `INSERT INTO PREDICTION_RECORD (...) VALUES (...)`.
 3. If saving the prediction record fails, the service returns `ApplicationProcessingResult.predictionPersistenceFailed(application, record, errorMsg)`.
 
 #### Step 8: Result Packaging and HTTP Response Generation
@@ -743,40 +743,40 @@ This section documents every single Java class and interface in the LoanLens cod
 ## 5.1 Configuration Subsystem
 
 ### 1. `com.loanrisk.config.DatabaseConfig`
-- **Source File:** [`src/java/com/loanrisk/config/DatabaseConfig.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java)
+- **Source File:** [`src/java/com/loanrisk/config/DatabaseConfig.java`](../src/java/com/loanrisk/config/DatabaseConfig.java)
 - **Total Lines:** 85 lines
 
 #### Part A: Architectural Purpose & Role
-[`DatabaseConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java) is the centralized, standalone configuration provider for JDBC database connectivity. It decouples the physical database connection properties (JDBC URL, username, password, driver class) from the repository implementations ([`OracleLoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java) and [`OraclePredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java)). It acts as a static factory that loads the Oracle JDBC driver and produces live `java.sql.Connection` instances, resolving settings dynamically from Java system properties and OS environment variables.
+[`DatabaseConfig`](../src/java/com/loanrisk/config/DatabaseConfig.java) is the centralized, standalone configuration provider for JDBC database connectivity. It decouples the physical database connection properties (JDBC URL, username, password, driver class) from the repository implementations ([`OracleLoanApplicationRepository`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java) and [`OraclePredictionRecordRepository`](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java)). It acts as a static factory that loads the Oracle JDBC driver and produces live `java.sql.Connection` instances, resolving settings dynamically from Java system properties and OS environment variables.
 
 #### Part B: Field-by-Field Breakdown
-- `DEFAULT_URL` (`private static final String`, [Line 14](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L14)): `"jdbc:oracle:thin:@localhost:1521:XE"`. Default JDBC thin driver connection URL targeting local Oracle 10g Express Edition.
-- `DEFAULT_USER` (`private static final String`, [Line 15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L15)): `"loan_user"`. Default Oracle schema owner username.
-- `DEFAULT_PASSWORD` (`private static final String`, [Line 16](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L16)): `"loan_password"`. Default authentication password.
-- `DEFAULT_DRIVER` (`private static final String`, [Line 17](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L17)): `"oracle.jdbc.OracleDriver"`. Canonical Oracle JDBC driver class name.
+- `DEFAULT_URL` (`private static final String`, [Line 14](../src/java/com/loanrisk/config/DatabaseConfig.java#L14)): `"jdbc:oracle:thin:@localhost:1521:XE"`. Default JDBC thin driver connection URL targeting local Oracle 10g Express Edition.
+- `DEFAULT_USER` (`private static final String`, [Line 15](../src/java/com/loanrisk/config/DatabaseConfig.java#L15)): `"loan_user"`. Default Oracle schema owner username.
+- `DEFAULT_PASSWORD` (`private static final String`, [Line 16](../src/java/com/loanrisk/config/DatabaseConfig.java#L16)): `"loan_password"`. Default authentication password.
+- `DEFAULT_DRIVER` (`private static final String`, [Line 17](../src/java/com/loanrisk/config/DatabaseConfig.java#L17)): `"oracle.jdbc.OracleDriver"`. Canonical Oracle JDBC driver class name.
 
 #### Part C: Method-by-Method Breakdown
-1. `private DatabaseConfig()` ([Line 19](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L19)):
+1. `private DatabaseConfig()` ([Line 19](../src/java/com/loanrisk/config/DatabaseConfig.java#L19)):
    - Private constructor preventing instantiation of this static utility class.
-2. `public static String getUrl()` ([Lines 26-28](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L26-L28)):
+2. `public static String getUrl()` ([Lines 26-28](../src/java/com/loanrisk/config/DatabaseConfig.java#L26-L28)):
    - Returns the active JDBC URL by calling `resolve("loan.db.url", "LOAN_DB_URL", DEFAULT_URL)`.
-3. `public static String getUsername()` ([Lines 35-37](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L35-L37)):
+3. `public static String getUsername()` ([Lines 35-37](../src/java/com/loanrisk/config/DatabaseConfig.java#L35-L37)):
    - Returns the active Oracle username by calling `resolve("loan.db.user", "LOAN_DB_USER", DEFAULT_USER)`.
-4. `public static String getPassword()` ([Lines 44-46](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L44-L46)):
+4. `public static String getPassword()` ([Lines 44-46](../src/java/com/loanrisk/config/DatabaseConfig.java#L44-L46)):
    - Returns the active Oracle password by calling `resolve("loan.db.password", "LOAN_DB_PASSWORD", DEFAULT_PASSWORD)`.
-5. `public static String getDriverClass()` ([Lines 53-55](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L53-L55)):
+5. `public static String getDriverClass()` ([Lines 53-55](../src/java/com/loanrisk/config/DatabaseConfig.java#L53-L55)):
    - Returns the active driver class by calling `resolve("loan.db.driver", "LOAN_DB_DRIVER", DEFAULT_DRIVER)`.
-6. `public static Connection getConnection() throws SQLException` ([Lines 63-71](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L63-L71)):
+6. `public static Connection getConnection() throws SQLException` ([Lines 63-71](../src/java/com/loanrisk/config/DatabaseConfig.java#L63-L71)):
    - Dynamically loads the JDBC driver via `Class.forName(getDriverClass())`.
    - Obtains and returns a physical connection via `DriverManager.getConnection(getUrl(), getUsername(), getPassword())`.
    - If `ClassNotFoundException` occurs, wraps it in a descriptive `SQLException`.
-7. `private static String resolve(String systemProperty, String envVariable, String defaultValue)` ([Lines 73-84](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L73-L84)):
+7. `private static String resolve(String systemProperty, String envVariable, String defaultValue)` ([Lines 73-84](../src/java/com/loanrisk/config/DatabaseConfig.java#L73-L84)):
    - Checks `System.getProperty(systemProperty)`. If present and non-blank, trims and returns it.
    - Checks `System.getenv(envVariable)`. If present and non-blank, trims and returns it.
    - Otherwise, returns `defaultValue`.
 
 #### Part D: Dependencies & Collaborators
-- **Inward Callers:** [`OracleLoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java), [`OraclePredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java), [`ConfigurationTest`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java).
+- **Inward Callers:** [`OracleLoanApplicationRepository`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java), [`OraclePredictionRecordRepository`](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java), [`ConfigurationTest`](../test/com/loanrisk/test/ConfigurationTest.java).
 - **Outward Collaborators:** `java.sql.DriverManager`, `java.sql.Connection`.
 
 #### Part E: Error Handling & Edge Cases
@@ -790,37 +790,37 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 2. `com.loanrisk.config.StorageConfig`
-- **Source File:** [`src/java/com/loanrisk/config/StorageConfig.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java)
+- **Source File:** [`src/java/com/loanrisk/config/StorageConfig.java`](../src/java/com/loanrisk/config/StorageConfig.java)
 - **Total Lines:** 86 lines
 
 #### Part A: Architectural Purpose & Role
-[`StorageConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java) defines and validates the active storage engine mode of the application. It acts as the gatekeeper for the Pluggable Dual-Storage Strategy, determining whether LoanLens runs in volatile in-memory mode or Oracle relational database mode. It enforces the system's strict anti-fallback rule.
+[`StorageConfig`](../src/java/com/loanrisk/config/StorageConfig.java) defines and validates the active storage engine mode of the application. It acts as the gatekeeper for the Pluggable Dual-Storage Strategy, determining whether LoanLens runs in volatile in-memory mode or Oracle relational database mode. It enforces the system's strict anti-fallback rule.
 
 #### Part B: Field-by-Field Breakdown
-- `MODE_MEMORY` (`public static final String`, [Line 12](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java#L12)): `"memory"`. Identifies the ConcurrentHashMap repository implementation.
-- `MODE_ORACLE` (`public static final String`, [Line 13](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java#L13)): `"oracle"`. Identifies the Oracle JDBC repository implementation.
-- `defaultMode` (`private static String`, [Line 15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java#L15)): `"memory"`. Default mode seeded by `AppLifecycleListener` from `web.xml`.
+- `MODE_MEMORY` (`public static final String`, [Line 12](../src/java/com/loanrisk/config/StorageConfig.java#L12)): `"memory"`. Identifies the ConcurrentHashMap repository implementation.
+- `MODE_ORACLE` (`public static final String`, [Line 13](../src/java/com/loanrisk/config/StorageConfig.java#L13)): `"oracle"`. Identifies the Oracle JDBC repository implementation.
+- `defaultMode` (`private static String`, [Line 15](../src/java/com/loanrisk/config/StorageConfig.java#L15)): `"memory"`. Default mode seeded by `AppLifecycleListener` from `web.xml`.
 
 #### Part C: Method-by-Method Breakdown
-1. `private StorageConfig()` ([Line 17](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java#L17)):
+1. `private StorageConfig()` ([Line 17](../src/java/com/loanrisk/config/StorageConfig.java#L17)):
    - Private constructor preventing instantiation.
-2. `public static synchronized void setDefaultMode(String mode)` ([Lines 25-33](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java#L25-L33)):
+2. `public static synchronized void setDefaultMode(String mode)` ([Lines 25-33](../src/java/com/loanrisk/config/StorageConfig.java#L25-L33)):
    - Validates that `mode` is neither null nor invalid. Converts to lower case. If not `"memory"` or `"oracle"`, throws `IllegalArgumentException`. Sets `defaultMode`.
-3. `public static String getStorageMode()` ([Lines 42-59](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java#L42-L59)):
+3. `public static String getStorageMode()` ([Lines 42-59](../src/java/com/loanrisk/config/StorageConfig.java#L42-L59)):
    - Implements the 3-tier precedence check:
      1. `System.getProperty("loan.storage.mode")`
      2. `System.getenv("LOAN_STORAGE_MODE")`
      3. `defaultMode`
    - Normalizes value to lowercase. Validates against allowed modes. If an unrecognized mode is supplied (e.g. `"mysql"` or `"mongo"`), throws `IllegalStateException`.
-4. `public static boolean isMemoryMode()` ([Lines 66-68](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java#L66-L68)):
+4. `public static boolean isMemoryMode()` ([Lines 66-68](../src/java/com/loanrisk/config/StorageConfig.java#L66-L68)):
    - Returns `MODE_MEMORY.equalsIgnoreCase(getStorageMode())`.
-5. `public static boolean isOracleMode()` ([Lines 75-77](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java#L75-L77)):
+5. `public static boolean isOracleMode()` ([Lines 75-77](../src/java/com/loanrisk/config/StorageConfig.java#L75-L77)):
    - Returns `MODE_ORACLE.equalsIgnoreCase(getStorageMode())`.
-6. `private static boolean isValidMode(String mode)` ([Lines 79-84](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java#L79-L84)):
+6. `private static boolean isValidMode(String mode)` ([Lines 79-84](../src/java/com/loanrisk/config/StorageConfig.java#L79-L84)):
    - Helper returning true if mode matches `MODE_MEMORY` or `MODE_ORACLE`.
 
 #### Part D: Dependencies & Collaborators
-- **Inward Callers:** [`AppLifecycleListener`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/AppLifecycleListener.java), [`RepositoryFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java), [`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java), [`ConfigurationTest`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java).
+- **Inward Callers:** [`AppLifecycleListener`](../src/java/com/loanrisk/web/AppLifecycleListener.java), [`RepositoryFactory`](../src/java/com/loanrisk/repository/RepositoryFactory.java), [`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java), [`ConfigurationTest`](../test/com/loanrisk/test/ConfigurationTest.java).
 - **Outward Collaborators:** Java standard system properties and environment APIs.
 
 #### Part E: Error Handling & Edge Cases
@@ -833,35 +833,35 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 3. `com.loanrisk.config.MlConfig`
-- **Source File:** [`src/java/com/loanrisk/config/MlConfig.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java)
+- **Source File:** [`src/java/com/loanrisk/config/MlConfig.java`](../src/java/com/loanrisk/config/MlConfig.java)
 - **Total Lines:** 158 lines
 
 #### Part A: Architectural Purpose & Role
-[`MlConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java) governs the machine learning inference subsystem configuration. It validates whether LoanLens uses the internal rule-based mock engine (`mock`) or the remote HTTP Python service (`http`). When in HTTP mode, it strictly validates the target URI syntax, protocol scheme, host existence, and timeout parameters.
+[`MlConfig`](../src/java/com/loanrisk/config/MlConfig.java) governs the machine learning inference subsystem configuration. It validates whether LoanLens uses the internal rule-based mock engine (`mock`) or the remote HTTP Python service (`http`). When in HTTP mode, it strictly validates the target URI syntax, protocol scheme, host existence, and timeout parameters.
 
 #### Part B: Field-by-Field Breakdown
-- `MODE_MOCK` (`public static final String`, [Line 15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L15)): `"mock"`.
-- `MODE_HTTP` (`public static final String`, [Line 16](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L16)): `"http"`.
-- `DEFAULT_BASE_URL` (`public static final String`, [Line 17](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L17)): `"http://localhost:8000"`. Default location of FastAPI service.
-- `DEFAULT_CONNECT_TIMEOUT_MS` (`public static final int`, [Line 18](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L18)): `3000` (3 seconds).
-- `DEFAULT_READ_TIMEOUT_MS` (`public static final int`, [Line 19](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L19)): `5000` (5 seconds).
-- `defaultMode` (`private static String`, [Line 21](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L21)): `"mock"`.
-- `defaultBaseUrl` (`private static String`, [Line 22](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L22)): `DEFAULT_BASE_URL`.
+- `MODE_MOCK` (`public static final String`, [Line 15](../src/java/com/loanrisk/config/MlConfig.java#L15)): `"mock"`.
+- `MODE_HTTP` (`public static final String`, [Line 16](../src/java/com/loanrisk/config/MlConfig.java#L16)): `"http"`.
+- `DEFAULT_BASE_URL` (`public static final String`, [Line 17](../src/java/com/loanrisk/config/MlConfig.java#L17)): `"http://localhost:8000"`. Default location of FastAPI service.
+- `DEFAULT_CONNECT_TIMEOUT_MS` (`public static final int`, [Line 18](../src/java/com/loanrisk/config/MlConfig.java#L18)): `3000` (3 seconds).
+- `DEFAULT_READ_TIMEOUT_MS` (`public static final int`, [Line 19](../src/java/com/loanrisk/config/MlConfig.java#L19)): `5000` (5 seconds).
+- `defaultMode` (`private static String`, [Line 21](../src/java/com/loanrisk/config/MlConfig.java#L21)): `"mock"`.
+- `defaultBaseUrl` (`private static String`, [Line 22](../src/java/com/loanrisk/config/MlConfig.java#L22)): `DEFAULT_BASE_URL`.
 
 #### Part C: Method-by-Method Breakdown
-1. `private MlConfig()` ([Line 24](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L24)): Private constructor.
-2. `public static synchronized void setDefaultMode(String mode)` ([Lines 31-39](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L31-L39)): Validates against `isValidMode()`, throws `IllegalArgumentException` if invalid.
-3. `public static synchronized void setDefaultBaseUrl(String url)` ([Lines 46-52](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L46-L52)): Validates URL via `validateUrl()`, stores in `defaultBaseUrl`.
-4. `public static String getMlMode()` ([Lines 60-77](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L60-L77)): Resolves mode using 3-tier precedence (`loan.ml.mode` -> `LOAN_ML_MODE` -> `defaultMode`). Throws `IllegalStateException` on invalid values.
-5. `public static boolean isMockMode()` ([Lines 84-86](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L84-L86)): Returns `MODE_MOCK.equalsIgnoreCase(getMlMode())`.
-6. `public static boolean isHttpMode()` ([Lines 93-95](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L93-L95)): Returns `MODE_HTTP.equalsIgnoreCase(getMlMode())`.
-7. `public static String getBaseUrl()` ([Lines 104-118](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L104-L118)): Resolves URL via `loan.ml.url` -> `LOAN_ML_URL` -> `defaultBaseUrl`. Strips trailing slashes, validates via `validateUrl()`.
-8. `public static int getConnectTimeoutMs()` ([Lines 125-132](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L125-L132)): Resolves connection timeout; falls back to `DEFAULT_CONNECT_TIMEOUT_MS`.
-9. `public static int getReadTimeoutMs()` ([Lines 139-146](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L139-L146)): Resolves read timeout; falls back to `DEFAULT_READ_TIMEOUT_MS`.
-10. `private static void validateUrl(String url)` ([Lines 148-157](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java#L148-L157)): Uses `URI.create(url).toURL()`; validates that scheme is `"http"` or `"https"` and host is non-null.
+1. `private MlConfig()` ([Line 24](../src/java/com/loanrisk/config/MlConfig.java#L24)): Private constructor.
+2. `public static synchronized void setDefaultMode(String mode)` ([Lines 31-39](../src/java/com/loanrisk/config/MlConfig.java#L31-L39)): Validates against `isValidMode()`, throws `IllegalArgumentException` if invalid.
+3. `public static synchronized void setDefaultBaseUrl(String url)` ([Lines 46-52](../src/java/com/loanrisk/config/MlConfig.java#L46-L52)): Validates URL via `validateUrl()`, stores in `defaultBaseUrl`.
+4. `public static String getMlMode()` ([Lines 60-77](../src/java/com/loanrisk/config/MlConfig.java#L60-L77)): Resolves mode using 3-tier precedence (`loan.ml.mode` -> `LOAN_ML_MODE` -> `defaultMode`). Throws `IllegalStateException` on invalid values.
+5. `public static boolean isMockMode()` ([Lines 84-86](../src/java/com/loanrisk/config/MlConfig.java#L84-L86)): Returns `MODE_MOCK.equalsIgnoreCase(getMlMode())`.
+6. `public static boolean isHttpMode()` ([Lines 93-95](../src/java/com/loanrisk/config/MlConfig.java#L93-L95)): Returns `MODE_HTTP.equalsIgnoreCase(getMlMode())`.
+7. `public static String getBaseUrl()` ([Lines 104-118](../src/java/com/loanrisk/config/MlConfig.java#L104-L118)): Resolves URL via `loan.ml.url` -> `LOAN_ML_URL` -> `defaultBaseUrl`. Strips trailing slashes, validates via `validateUrl()`.
+8. `public static int getConnectTimeoutMs()` ([Lines 125-132](../src/java/com/loanrisk/config/MlConfig.java#L125-L132)): Resolves connection timeout; falls back to `DEFAULT_CONNECT_TIMEOUT_MS`.
+9. `public static int getReadTimeoutMs()` ([Lines 139-146](../src/java/com/loanrisk/config/MlConfig.java#L139-L146)): Resolves read timeout; falls back to `DEFAULT_READ_TIMEOUT_MS`.
+10. `private static void validateUrl(String url)` ([Lines 148-157](../src/java/com/loanrisk/config/MlConfig.java#L148-L157)): Uses `URI.create(url).toURL()`; validates that scheme is `"http"` or `"https"` and host is non-null.
 
 #### Part D: Dependencies & Collaborators
-- **Inward Callers:** [`AppLifecycleListener`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/AppLifecycleListener.java), [`PredictionProviderFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java), [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java), [`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java), [`ConfigurationTest`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java).
+- **Inward Callers:** [`AppLifecycleListener`](../src/java/com/loanrisk/web/AppLifecycleListener.java), [`PredictionProviderFactory`](../src/java/com/loanrisk/ml/PredictionProviderFactory.java), [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java), [`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java), [`ConfigurationTest`](../test/com/loanrisk/test/ConfigurationTest.java).
 - **Outward Collaborators:** `java.net.URI`, `java.net.URL`.
 
 #### Part E: Error Handling & Edge Cases
@@ -876,33 +876,33 @@ This section documents every single Java class and interface in the LoanLens cod
 ## 5.2 Domain Model Entities
 
 ### 4. `com.loanrisk.model.LoanApplication`
-- **Source File:** [`src/java/com/loanrisk/model/LoanApplication.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java)
+- **Source File:** [`src/java/com/loanrisk/model/LoanApplication.java`](../src/java/com/loanrisk/model/LoanApplication.java)
 - **Total Lines:** 162 lines
 
 #### Part A: Architectural Purpose & Role
-[`LoanApplication`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java) is the core domain entity representing a borrower's credit underwriting submission. It encapsulates the 9 Kaggle microfinance predictive features, surrogate primary key `applicationId`, lifecycle submission timestamp, and status. It serves as the primary Data Transfer Object (DTO) between the Servlet, Service, Repository, and ML layers.
+[`LoanApplication`](../src/java/com/loanrisk/model/LoanApplication.java) is the core domain entity representing a borrower's credit underwriting submission. It encapsulates the 9 Kaggle microfinance predictive features, surrogate primary key `applicationId`, lifecycle submission timestamp, and status. It serves as the primary Data Transfer Object (DTO) between the Servlet, Service, Repository, and ML layers.
 
 #### Part B: Field-by-Field Breakdown
-- `applicationId` (`private Long`, [Line 13](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L13)): Primary surrogate key generated by the repository. Null before persistence.
-- `investmentTotal` (`private Double`, [Line 16](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L16)): Total capital/investment amount requested by the applicant.
-- `accCurrentBalance` (`private Double`, [Line 17](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L17)): Liquid cash balance in the borrower's deposit account.
-- `infMaritalStatus` (`private String`, [Line 18](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L18)): Demographic marital status category.
-- `infGender` (`private String`, [Line 19](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L19)): Demographic gender indicator.
-- `installSize` (`private Double`, [Line 20](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L20)): Contractual periodic installment payment amount.
-- `duePayment` (`private Double`, [Line 21](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L21)): Cumulative overdue/past-due arrears currently owed.
-- `compensationCharged` (`private String`, [Line 22](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L22)): Late fees or penalty charges incurred category.
-- `clientType` (`private String`, [Line 23](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L23)): Borrowing client category (e.g. `"Individual"`, `"Corporate"`).
-- `repayMode` (`private String`, [Line 24](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L24)): Repayment channel/frequency category (e.g. `"Monthly"`, `"Auto-Debit"`).
-- `submissionTimestamp` (`private Instant`, [Line 27](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L27)): UTC timestamp recorded at the moment of submission.
-- `status` (`private String`, [Line 28](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L28)): Workflow status (`"SUBMITTED"`, `"PROCESSED"`, etc.).
+- `applicationId` (`private Long`, [Line 13](../src/java/com/loanrisk/model/LoanApplication.java#L13)): Primary surrogate key generated by the repository. Null before persistence.
+- `investmentTotal` (`private Double`, [Line 16](../src/java/com/loanrisk/model/LoanApplication.java#L16)): Total capital/investment amount requested by the applicant.
+- `accCurrentBalance` (`private Double`, [Line 17](../src/java/com/loanrisk/model/LoanApplication.java#L17)): Liquid cash balance in the borrower's deposit account.
+- `infMaritalStatus` (`private String`, [Line 18](../src/java/com/loanrisk/model/LoanApplication.java#L18)): Demographic marital status category.
+- `infGender` (`private String`, [Line 19](../src/java/com/loanrisk/model/LoanApplication.java#L19)): Demographic gender indicator.
+- `installSize` (`private Double`, [Line 20](../src/java/com/loanrisk/model/LoanApplication.java#L20)): Contractual periodic installment payment amount.
+- `duePayment` (`private Double`, [Line 21](../src/java/com/loanrisk/model/LoanApplication.java#L21)): Cumulative overdue/past-due arrears currently owed.
+- `compensationCharged` (`private String`, [Line 22](../src/java/com/loanrisk/model/LoanApplication.java#L22)): Late fees or penalty charges incurred category.
+- `clientType` (`private String`, [Line 23](../src/java/com/loanrisk/model/LoanApplication.java#L23)): Borrowing client category (e.g. `"Individual"`, `"Corporate"`).
+- `repayMode` (`private String`, [Line 24](../src/java/com/loanrisk/model/LoanApplication.java#L24)): Repayment channel/frequency category (e.g. `"Monthly"`, `"Auto-Debit"`).
+- `submissionTimestamp` (`private Instant`, [Line 27](../src/java/com/loanrisk/model/LoanApplication.java#L27)): UTC timestamp recorded at the moment of submission.
+- `status` (`private String`, [Line 28](../src/java/com/loanrisk/model/LoanApplication.java#L28)): Workflow status (`"SUBMITTED"`, `"PROCESSED"`, etc.).
 
 #### Part C: Method-by-Method Breakdown
-1. `public LoanApplication()` ([Line 30](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L30)): Default no-arg constructor.
-2. Standard getters and setters for all 12 properties ([Lines 34-142](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L34-L142)).
-3. `public String toString()` ([Lines 144-161](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java#L144-L161)): Generates a structured multi-line debugging representation.
+1. `public LoanApplication()` ([Line 30](../src/java/com/loanrisk/model/LoanApplication.java#L30)): Default no-arg constructor.
+2. Standard getters and setters for all 12 properties ([Lines 34-142](../src/java/com/loanrisk/model/LoanApplication.java#L34-L142)).
+3. `public String toString()` ([Lines 144-161](../src/java/com/loanrisk/model/LoanApplication.java#L144-L161)): Generates a structured multi-line debugging representation.
 
 #### Part D: Dependencies & Collaborators
-- Used throughout the entire pipeline: instantiated by [`LoanApplicationServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java), validated and coordinated by [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java), persisted by [`LoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java), and evaluated by [`PredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java).
+- Used throughout the entire pipeline: instantiated by [`LoanApplicationServlet`](../src/java/com/loanrisk/web/LoanApplicationServlet.java), validated and coordinated by [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java), persisted by [`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java), and evaluated by [`PredictionProvider`](../src/java/com/loanrisk/ml/PredictionProvider.java).
 
 #### Part E: Error Handling & Edge Cases
 - All numeric features use boxed `Double` rather than primitive `double`. This allows the validation engine to detect missing (null) values in JSON payloads distinct from explicitly supplied `0.0`.
@@ -914,29 +914,29 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 5. `com.loanrisk.model.PredictionRecord`
-- **Source File:** [`src/java/com/loanrisk/model/PredictionRecord.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java)
+- **Source File:** [`src/java/com/loanrisk/model/PredictionRecord.java`](../src/java/com/loanrisk/model/PredictionRecord.java)
 - **Total Lines:** 118 lines
 
 #### Part A: Architectural Purpose & Role
-[`PredictionRecord`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java) represents the immutable analytical audit trail resulting from an AI risk inference. It associates an evaluation outcome (`predictedClass`, `probabilityB`) with the parent `LoanApplication` via `applicationId`, preserving governance metadata including `modelVersion`, `thresholdUsed`, and whether the score was simulated or computed by live ML.
+[`PredictionRecord`](../src/java/com/loanrisk/model/PredictionRecord.java) represents the immutable analytical audit trail resulting from an AI risk inference. It associates an evaluation outcome (`predictedClass`, `probabilityB`) with the parent `LoanApplication` via `applicationId`, preserving governance metadata including `modelVersion`, `thresholdUsed`, and whether the score was simulated or computed by live ML.
 
 #### Part B: Field-by-Field Breakdown
-- `predictionId` (`private Long`, [Line 13](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L13)): Primary surrogate key for the prediction record.
-- `applicationId` (`private Long`, [Line 14](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L14)): Foreign key referencing the associated `LoanApplication.applicationId`.
-- `predictedClass` (`private String`, [Line 15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L15)): Binary decision label: `"G"` (Good) or `"B"` (Bad).
-- `probabilityB` (`private Double`, [Line 16](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L16)): Calibrated posterior probability of default $P(\text{Class} = \text{'B'} \mid X) \in [0.0, 1.0]$.
-- `thresholdUsed` (`private Double`, [Line 17](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L17)): Decision cutoff (standard `0.3000`).
-- `modelVersion` (`private String`, [Line 18](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L18)): Identifier of the scoring model (e.g., `"mock-heuristic-v1"`, `"kaggle-lgbm-v1"`).
-- `predictionTimestamp` (`private Instant`, [Line 19](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L19)): UTC timestamp when inference was computed.
-- `simulated` (`private boolean`, [Line 20](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L20)): True if produced by `MockPredictionProvider`, false if produced by live `HttpPredictionProvider`.
+- `predictionId` (`private Long`, [Line 13](../src/java/com/loanrisk/model/PredictionRecord.java#L13)): Primary surrogate key for the prediction record.
+- `applicationId` (`private Long`, [Line 14](../src/java/com/loanrisk/model/PredictionRecord.java#L14)): Foreign key referencing the associated `LoanApplication.applicationId`.
+- `predictedClass` (`private String`, [Line 15](../src/java/com/loanrisk/model/PredictionRecord.java#L15)): Binary decision label: `"G"` (Good) or `"B"` (Bad).
+- `probabilityB` (`private Double`, [Line 16](../src/java/com/loanrisk/model/PredictionRecord.java#L16)): Calibrated posterior probability of default $P(\text{Class} = \text{'B'} \mid X) \in [0.0, 1.0]$.
+- `thresholdUsed` (`private Double`, [Line 17](../src/java/com/loanrisk/model/PredictionRecord.java#L17)): Decision cutoff (standard `0.3000`).
+- `modelVersion` (`private String`, [Line 18](../src/java/com/loanrisk/model/PredictionRecord.java#L18)): Identifier of the scoring model (e.g., `"mock-heuristic-v1"`, `"kaggle-lgbm-v1"`).
+- `predictionTimestamp` (`private Instant`, [Line 19](../src/java/com/loanrisk/model/PredictionRecord.java#L19)): UTC timestamp when inference was computed.
+- `simulated` (`private boolean`, [Line 20](../src/java/com/loanrisk/model/PredictionRecord.java#L20)): True if produced by `MockPredictionProvider`, false if produced by live `HttpPredictionProvider`.
 
 #### Part C: Method-by-Method Breakdown
-1. `public PredictionRecord()` ([Line 22](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L22)): Default no-arg constructor.
-2. Standard getters and setters for all 8 properties ([Lines 26-97](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L26-L97)).
-3. `public String toString()` ([Lines 99-117](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java#L99-L117)): Formats diagnostic representation.
+1. `public PredictionRecord()` ([Line 22](../src/java/com/loanrisk/model/PredictionRecord.java#L22)): Default no-arg constructor.
+2. Standard getters and setters for all 8 properties ([Lines 26-97](../src/java/com/loanrisk/model/PredictionRecord.java#L26-L97)).
+3. `public String toString()` ([Lines 99-117](../src/java/com/loanrisk/model/PredictionRecord.java#L99-L117)): Formats diagnostic representation.
 
 #### Part D: Dependencies & Collaborators
-- Produced by [`PredictionProvider.predict()`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java), persisted by [`PredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java), encapsulated in [`ApplicationProcessingResult`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java), and rendered by [`app.js`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/js/app.js).
+- Produced by [`PredictionProvider.predict()`](../src/java/com/loanrisk/ml/PredictionProvider.java), persisted by [`PredictionRecordRepository`](../src/java/com/loanrisk/repository/PredictionRecordRepository.java), encapsulated in [`ApplicationProcessingResult`](../src/java/com/loanrisk/service/ApplicationProcessingResult.java), and rendered by [`app.js`](../web/js/app.js).
 
 #### Part E: Error Handling & Edge Cases
 - Oracle Persistence Discrepancy: The Oracle table `PREDICTION_RECORD` does not have a `SIMULATED` column. When reading from Oracle, `OraclePredictionRecordRepository` explicitly invokes `record.setSimulated(false)`.
@@ -951,23 +951,23 @@ This section documents every single Java class and interface in the LoanLens cod
 ## 5.3 Service Layer
 
 ### 6. `com.loanrisk.service.ValidationResult`
-- **Source File:** [`src/java/com/loanrisk/service/ValidationResult.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ValidationResult.java)
+- **Source File:** [`src/java/com/loanrisk/service/ValidationResult.java`](../src/java/com/loanrisk/service/ValidationResult.java)
 - **Total Lines:** 33 lines
 
 #### Part A: Architectural Purpose & Role
-[`ValidationResult`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ValidationResult.java) implements the **Error Accumulator Pattern**. Instead of aborting processing on the first invalid field (which frustrates users by requiring multiple round-trips), `ValidationResult` aggregates all domain invariant violations across all 9 applicant features into a single collection.
+[`ValidationResult`](../src/java/com/loanrisk/service/ValidationResult.java) implements the **Error Accumulator Pattern**. Instead of aborting processing on the first invalid field (which frustrates users by requiring multiple round-trips), `ValidationResult` aggregates all domain invariant violations across all 9 applicant features into a single collection.
 
 #### Part B: Field-by-Field Breakdown
-- `errors` (`private final List<String>`, [Line 11](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ValidationResult.java#L11)): Thread-confined `ArrayList<String>` holding human-readable error descriptions.
+- `errors` (`private final List<String>`, [Line 11](../src/java/com/loanrisk/service/ValidationResult.java#L11)): Thread-confined `ArrayList<String>` holding human-readable error descriptions.
 
 #### Part C: Method-by-Method Breakdown
-1. `public ValidationResult()` ([Line 13](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ValidationResult.java#L13)): Initializes `errors = new ArrayList<>()`.
-2. `public void addError(String error)` ([Lines 17-21](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ValidationResult.java#L17-L21)): Appends an error string if it is non-null and non-blank.
-3. `public boolean isValid()` ([Lines 24-26](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ValidationResult.java#L24-L26)): Returns `errors.isEmpty()`.
-4. `public List<String> getErrors()` ([Lines 29-31](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ValidationResult.java#L29-L31)): Returns an unmodifiable view via `Collections.unmodifiableList(errors)`.
+1. `public ValidationResult()` ([Line 13](../src/java/com/loanrisk/service/ValidationResult.java#L13)): Initializes `errors = new ArrayList<>()`.
+2. `public void addError(String error)` ([Lines 17-21](../src/java/com/loanrisk/service/ValidationResult.java#L17-L21)): Appends an error string if it is non-null and non-blank.
+3. `public boolean isValid()` ([Lines 24-26](../src/java/com/loanrisk/service/ValidationResult.java#L24-L26)): Returns `errors.isEmpty()`.
+4. `public List<String> getErrors()` ([Lines 29-31](../src/java/com/loanrisk/service/ValidationResult.java#L29-L31)): Returns an unmodifiable view via `Collections.unmodifiableList(errors)`.
 
 #### Part D: Dependencies & Collaborators
-- Instantiated and populated by [`LoanApplicationService.validate()`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L125-L186); encapsulated within [`ApplicationProcessingResult`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L52-L54); inspected by [`LoanApplicationServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L104-L108).
+- Instantiated and populated by [`LoanApplicationService.validate()`](../src/java/com/loanrisk/service/LoanApplicationService.java#L125-L186); encapsulated within [`ApplicationProcessingResult`](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L52-L54); inspected by [`LoanApplicationServlet`](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L104-L108).
 
 #### Part E: Error Handling & Edge Cases
 - Immutability Protection: `getErrors()` wraps the underlying list in `Collections.unmodifiableList()`, preventing external callers from mutating the error list.
@@ -979,36 +979,36 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 7. `com.loanrisk.service.ApplicationProcessingResult`
-- **Source File:** [`src/java/com/loanrisk/service/ApplicationProcessingResult.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java)
+- **Source File:** [`src/java/com/loanrisk/service/ApplicationProcessingResult.java`](../src/java/com/loanrisk/service/ApplicationProcessingResult.java)
 - **Total Lines:** 89 lines
 
 #### Part A: Architectural Purpose & Role
-[`ApplicationProcessingResult`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java) implements the **Result Object Pattern** (a type-safe discriminated union). It models the five possible outcomes of the loan evaluation pipeline without relying on runtime exceptions for flow control, providing rich contextual data for each state.
+[`ApplicationProcessingResult`](../src/java/com/loanrisk/service/ApplicationProcessingResult.java) implements the **Result Object Pattern** (a type-safe discriminated union). It models the five possible outcomes of the loan evaluation pipeline without relying on runtime exceptions for flow control, providing rich contextual data for each state.
 
 #### Part B: Field-by-Field Breakdown
-- `Status` (`public enum`, [Lines 13-19](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L13-L19)): Enum with 5 states:
+- `Status` (`public enum`, [Lines 13-19](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L13-L19)): Enum with 5 states:
   - `SUCCESS`: All stages completed.
   - `VALIDATION_FAILED`: Business rules violated.
   - `DATABASE_ERROR`: Application failed to save in primary store.
   - `PREDICTION_FAILED`: Application saved, but AI inference failed.
   - `PREDICTION_PERSISTENCE_FAILED`: Application saved & predicted, but prediction record failed to persist.
-- `status` (`private final Status`, [Line 21](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L21)): Active state.
-- `application` (`private final LoanApplication`, [Line 22](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L22)): Primary loan entity.
-- `predictionRecord` (`private final PredictionRecord`, [Line 23](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L23)): AI prediction entity.
-- `validationResult` (`private final ValidationResult`, [Line 24](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L24)): Validation errors.
-- `errorMessage` (`private final String`, [Line 25](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L25)): Operational failure details.
+- `status` (`private final Status`, [Line 21](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L21)): Active state.
+- `application` (`private final LoanApplication`, [Line 22](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L22)): Primary loan entity.
+- `predictionRecord` (`private final PredictionRecord`, [Line 23](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L23)): AI prediction entity.
+- `validationResult` (`private final ValidationResult`, [Line 24](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L24)): Validation errors.
+- `errorMessage` (`private final String`, [Line 25](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L25)): Operational failure details.
 
 #### Part C: Method-by-Method Breakdown
-1. `private ApplicationProcessingResult(...)` ([Lines 27-37](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L27-L37)): Private constructor enforcing creation through static factory methods.
-2. `public static ApplicationProcessingResult success(LoanApplication app, PredictionRecord pred)` ([Lines 44-46](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L44-L46)): Returns a `SUCCESS` result.
-3. `public static ApplicationProcessingResult validationFailed(ValidationResult vr)` ([Lines 52-54](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L52-L54)): Returns a `VALIDATION_FAILED` result.
-4. `public static ApplicationProcessingResult databaseError(String msg)` ([Lines 60-62](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L60-L62)): Returns a `DATABASE_ERROR` result.
-5. `public static ApplicationProcessingResult predictionFailed(LoanApplication app, String msg)` ([Lines 69-71](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L69-L71)): Returns a `PREDICTION_FAILED` result containing the persisted application.
-6. `public static ApplicationProcessingResult predictionPersistenceFailed(LoanApplication app, PredictionRecord pred, String msg)` ([Lines 78-80](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L78-L80)): Returns a `PREDICTION_PERSISTENCE_FAILED` result.
-7. Getters for all fields ([Lines 82-88](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java#L82-L88)).
+1. `private ApplicationProcessingResult(...)` ([Lines 27-37](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L27-L37)): Private constructor enforcing creation through static factory methods.
+2. `public static ApplicationProcessingResult success(LoanApplication app, PredictionRecord pred)` ([Lines 44-46](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L44-L46)): Returns a `SUCCESS` result.
+3. `public static ApplicationProcessingResult validationFailed(ValidationResult vr)` ([Lines 52-54](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L52-L54)): Returns a `VALIDATION_FAILED` result.
+4. `public static ApplicationProcessingResult databaseError(String msg)` ([Lines 60-62](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L60-L62)): Returns a `DATABASE_ERROR` result.
+5. `public static ApplicationProcessingResult predictionFailed(LoanApplication app, String msg)` ([Lines 69-71](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L69-L71)): Returns a `PREDICTION_FAILED` result containing the persisted application.
+6. `public static ApplicationProcessingResult predictionPersistenceFailed(LoanApplication app, PredictionRecord pred, String msg)` ([Lines 78-80](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L78-L80)): Returns a `PREDICTION_PERSISTENCE_FAILED` result.
+7. Getters for all fields ([Lines 82-88](../src/java/com/loanrisk/service/ApplicationProcessingResult.java#L82-L88)).
 
 #### Part D: Dependencies & Collaborators
-- Created by [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java); consumed by [`LoanApplicationServlet.doPost()`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L101-L149).
+- Created by [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java); consumed by [`LoanApplicationServlet.doPost()`](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L101-L149).
 
 #### Part E: Error Handling & Edge Cases
 - Partial Failure Preservation: Notice that `predictionFailed` requires `LoanApplication app`. Even if inference crashes, the caller retains the primary key `app.getApplicationId()`, enabling the servlet to report an HTTP 502 with the ID intact.
@@ -1020,32 +1020,32 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 8. `com.loanrisk.service.LoanApplicationService`
-- **Source File:** [`src/java/com/loanrisk/service/LoanApplicationService.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java)
+- **Source File:** [`src/java/com/loanrisk/service/LoanApplicationService.java`](../src/java/com/loanrisk/service/LoanApplicationService.java)
 - **Total Lines:** 187 lines
 
 #### Part A: Architectural Purpose & Role
-[`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) is the master domain orchestrator. It executes the core business logic of LoanLens: validating applicant features, coordinating persistence with [`LoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java), triggering AI risk scoring via [`PredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java), and recording the decision audit trail in [`PredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java).
+[`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java) is the master domain orchestrator. It executes the core business logic of LoanLens: validating applicant features, coordinating persistence with [`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java), triggering AI risk scoring via [`PredictionProvider`](../src/java/com/loanrisk/ml/PredictionProvider.java), and recording the decision audit trail in [`PredictionRecordRepository`](../src/java/com/loanrisk/repository/PredictionRecordRepository.java).
 
 #### Part B: Field-by-Field Breakdown
-- `applicationRepository` (`private final LoanApplicationRepository`, [Line 24](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L24)): Interface for application persistence.
-- `predictionRepository` (`private final PredictionRecordRepository`, [Line 25](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L25)): Interface for prediction record persistence.
-- `predictionProvider` (`private final PredictionProvider`, [Line 26](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L26)): Interface for AI inference.
+- `applicationRepository` (`private final LoanApplicationRepository`, [Line 24](../src/java/com/loanrisk/service/LoanApplicationService.java#L24)): Interface for application persistence.
+- `predictionRepository` (`private final PredictionRecordRepository`, [Line 25](../src/java/com/loanrisk/service/LoanApplicationService.java#L25)): Interface for prediction record persistence.
+- `predictionProvider` (`private final PredictionProvider`, [Line 26](../src/java/com/loanrisk/service/LoanApplicationService.java#L26)): Interface for AI inference.
 
 #### Part C: Method-by-Method Breakdown
-1. `public LoanApplicationService(LoanApplicationRepository, PredictionRecordRepository, PredictionProvider)` ([Lines 28-36](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L28-L36)):
+1. `public LoanApplicationService(LoanApplicationRepository, PredictionRecordRepository, PredictionProvider)` ([Lines 28-36](../src/java/com/loanrisk/service/LoanApplicationService.java#L28-L36)):
    - Constructor injection. Validates that none of the three dependencies are null via `Objects.requireNonNull()`.
-2. `public ApplicationProcessingResult processApplication(LoanApplication application)` ([Lines 45-123](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L45-L123)):
-   - **Step 1: Validation** ([Lines 47-51](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L47-L51)): Invokes `validate(application)`. If invalid, returns `ApplicationProcessingResult.validationFailed(validationResult)`.
-   - **Step 2: Primary Persistence** ([Lines 53-65](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L53-L65)): Sets timestamp and status `"SUBMITTED"`. Calls `applicationRepository.save(application)`. Catches `StorageException` and returns `databaseError()`.
-   - **Step 3: AI Inference** ([Lines 67-86](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L67-L86)): Invokes `predictionProvider.predict(savedApp)`. Catches `PredictionException` and returns `predictionFailed(savedApp, e.getMessage())`.
-   - **Step 4: Secondary Persistence** ([Lines 88-118](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L88-L118)): Links `prediction.setApplicationId(savedApp.getApplicationId())`. Calls `predictionRepository.save(prediction)`. Catches `StorageException` and returns `predictionPersistenceFailed()`.
-   - **Step 5: Completion** ([Line 121](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L121)): Returns `ApplicationProcessingResult.success(savedApp, savedPred)`.
-3. `public ValidationResult validate(LoanApplication app)` ([Lines 125-186](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L125-L186)):
+2. `public ApplicationProcessingResult processApplication(LoanApplication application)` ([Lines 45-123](../src/java/com/loanrisk/service/LoanApplicationService.java#L45-L123)):
+   - **Step 1: Validation** ([Lines 47-51](../src/java/com/loanrisk/service/LoanApplicationService.java#L47-L51)): Invokes `validate(application)`. If invalid, returns `ApplicationProcessingResult.validationFailed(validationResult)`.
+   - **Step 2: Primary Persistence** ([Lines 53-65](../src/java/com/loanrisk/service/LoanApplicationService.java#L53-L65)): Sets timestamp and status `"SUBMITTED"`. Calls `applicationRepository.save(application)`. Catches `StorageException` and returns `databaseError()`.
+   - **Step 3: AI Inference** ([Lines 67-86](../src/java/com/loanrisk/service/LoanApplicationService.java#L67-L86)): Invokes `predictionProvider.predict(savedApp)`. Catches `PredictionException` and returns `predictionFailed(savedApp, e.getMessage())`.
+   - **Step 4: Secondary Persistence** ([Lines 88-118](../src/java/com/loanrisk/service/LoanApplicationService.java#L88-L118)): Links `prediction.setApplicationId(savedApp.getApplicationId())`. Calls `predictionRepository.save(prediction)`. Catches `StorageException` and returns `predictionPersistenceFailed()`.
+   - **Step 5: Completion** ([Line 121](../src/java/com/loanrisk/service/LoanApplicationService.java#L121)): Returns `ApplicationProcessingResult.success(savedApp, savedPred)`.
+3. `public ValidationResult validate(LoanApplication app)` ([Lines 125-186](../src/java/com/loanrisk/service/LoanApplicationService.java#L125-L186)):
    - Checks nullity of `app`.
    - Checks all 9 features: `investmentTotal` (> 0, <= 100M), `accCurrentBalance` (>= 0), `installSize` (> 0), `duePayment` (>= 0), and strings (`infMaritalStatus`, `infGender`, `compensationCharged`, `clientType`, `repayMode`) for non-blank values.
 
 #### Part D: Dependencies & Collaborators
-- Injected by [`LoanApplicationServlet.init()`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L47-L51); tested by [`ApplicationWorkflowTest`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ApplicationWorkflowTest.java).
+- Injected by [`LoanApplicationServlet.init()`](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L47-L51); tested by [`ApplicationWorkflowTest`](../test/com/loanrisk/test/ApplicationWorkflowTest.java).
 
 #### Part E: Error Handling & Edge Cases
 - Database / Network Boundary Isolation: The call to `predictionProvider.predict()` is intentionally positioned **after** primary persistence and **outside** any database lock. If the AI service times out, the database connection is already closed, preventing connection pool exhaustion.
@@ -1059,21 +1059,21 @@ This section documents every single Java class and interface in the LoanLens cod
 ## 5.4 Machine Learning Abstraction Subsystem
 
 ### 9. `com.loanrisk.ml.PredictionException`
-- **Source File:** [`src/java/com/loanrisk/ml/PredictionException.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionException.java)
+- **Source File:** [`src/java/com/loanrisk/ml/PredictionException.java`](../src/java/com/loanrisk/ml/PredictionException.java)
 - **Total Lines:** 17 lines
 
 #### Part A: Architectural Purpose & Role
-[`PredictionException`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionException.java) is an unchecked runtime exception representing failures during AI risk inference (e.g. network timeouts, HTTP 500 errors from FastAPI, malformed JSON responses, connection drops).
+[`PredictionException`](../src/java/com/loanrisk/ml/PredictionException.java) is an unchecked runtime exception representing failures during AI risk inference (e.g. network timeouts, HTTP 500 errors from FastAPI, malformed JSON responses, connection drops).
 
 #### Part B: Field-by-Field Breakdown
 - Inherits all standard exception fields from `java.lang.RuntimeException`.
 
 #### Part C: Method-by-Method Breakdown
-1. `public PredictionException(String message)` ([Lines 9-11](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionException.java#L9-L11)): Standard message constructor.
-2. `public PredictionException(String message, Throwable cause)` ([Lines 13-15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionException.java#L13-L15)): Chained cause constructor for root-cause preservation.
+1. `public PredictionException(String message)` ([Lines 9-11](../src/java/com/loanrisk/ml/PredictionException.java#L9-L11)): Standard message constructor.
+2. `public PredictionException(String message, Throwable cause)` ([Lines 13-15](../src/java/com/loanrisk/ml/PredictionException.java#L13-L15)): Chained cause constructor for root-cause preservation.
 
 #### Part D: Dependencies & Collaborators
-- Thrown by [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java); caught by [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) and [`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java).
+- Thrown by [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java); caught by [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java) and [`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java).
 
 #### Part E: Error Handling & Edge Cases
 - Unchecked Hierarchy: Extending `RuntimeException` avoids cluttering the `PredictionProvider` interface with checked exception declarations while preserving full stack traces.
@@ -1085,22 +1085,22 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 10. `com.loanrisk.ml.PredictionProvider`
-- **Source File:** [`src/java/com/loanrisk/ml/PredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java)
+- **Source File:** [`src/java/com/loanrisk/ml/PredictionProvider.java`](../src/java/com/loanrisk/ml/PredictionProvider.java)
 - **Total Lines:** 27 lines
 
 #### Part A: Architectural Purpose & Role
-[`PredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java) is the **Strategy Pattern interface** defining the contract for AI risk inference. It allows the core application to evaluate loan risk without coupling to a specific implementation (in-memory mock vs remote microservice).
+[`PredictionProvider`](../src/java/com/loanrisk/ml/PredictionProvider.java) is the **Strategy Pattern interface** defining the contract for AI risk inference. It allows the core application to evaluate loan risk without coupling to a specific implementation (in-memory mock vs remote microservice).
 
 #### Part B: Field-by-Field Breakdown
 - Pure interface; contains no fields.
 
 #### Part C: Method-by-Method Breakdown
-1. `PredictionRecord predict(LoanApplication application) throws PredictionException` ([Line 15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java#L15)): Evaluates applicant features and returns an inference record.
-2. `boolean isAvailable()` ([Line 21](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java#L21)): Probes health and connectivity of the prediction engine.
-3. `String getProviderName()` ([Line 26](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java#L26)): Returns a descriptive provider identifier (e.g., `"MockPredictionProvider"`, `"HttpPredictionProvider"`).
+1. `PredictionRecord predict(LoanApplication application) throws PredictionException` ([Line 15](../src/java/com/loanrisk/ml/PredictionProvider.java#L15)): Evaluates applicant features and returns an inference record.
+2. `boolean isAvailable()` ([Line 21](../src/java/com/loanrisk/ml/PredictionProvider.java#L21)): Probes health and connectivity of the prediction engine.
+3. `String getProviderName()` ([Line 26](../src/java/com/loanrisk/ml/PredictionProvider.java#L26)): Returns a descriptive provider identifier (e.g., `"MockPredictionProvider"`, `"HttpPredictionProvider"`).
 
 #### Part D: Dependencies & Collaborators
-- Implemented by [`MockPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java) and [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java); produced by [`PredictionProviderFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java); consumed by [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) and [`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java).
+- Implemented by [`MockPredictionProvider`](../src/java/com/loanrisk/ml/MockPredictionProvider.java) and [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java); produced by [`PredictionProviderFactory`](../src/java/com/loanrisk/ml/PredictionProviderFactory.java); consumed by [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java) and [`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java).
 
 #### Part E: Error Handling & Edge Cases
 - Contract guarantees: If `predict()` cannot compute an inference, it must throw a `PredictionException`; it must never return null.
@@ -1112,18 +1112,18 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 11. `com.loanrisk.ml.MockPredictionProvider`
-- **Source File:** [`src/java/com/loanrisk/ml/MockPredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java)
+- **Source File:** [`src/java/com/loanrisk/ml/MockPredictionProvider.java`](../src/java/com/loanrisk/ml/MockPredictionProvider.java)
 - **Total Lines:** 74 lines
 
 #### Part A: Architectural Purpose & Role
-[`MockPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java) is a zero-dependency, deterministic heuristic scoring provider. It allows LoanLens to execute fully functional credit risk scoring offline without launching Python, FastAPI, or Docker.
+[`MockPredictionProvider`](../src/java/com/loanrisk/ml/MockPredictionProvider.java) is a zero-dependency, deterministic heuristic scoring provider. It allows LoanLens to execute fully functional credit risk scoring offline without launching Python, FastAPI, or Docker.
 
 #### Part B: Field-by-Field Breakdown
-- `MODEL_VERSION` (`private static final String`, [Line 15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java#L15)): `"mock-heuristic-v1.0"`.
-- `THRESHOLD` (`private static final double`, [Line 16](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java#L16)): `0.3000`.
+- `MODEL_VERSION` (`private static final String`, [Line 15](../src/java/com/loanrisk/ml/MockPredictionProvider.java#L15)): `"mock-heuristic-v1.0"`.
+- `THRESHOLD` (`private static final double`, [Line 16](../src/java/com/loanrisk/ml/MockPredictionProvider.java#L16)): `0.3000`.
 
 #### Part C: Method-by-Method Breakdown
-1. `public PredictionRecord predict(LoanApplication application)` ([Lines 19-61](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java#L19-L61)):
+1. `public PredictionRecord predict(LoanApplication application)` ([Lines 19-61](../src/java/com/loanrisk/ml/MockPredictionProvider.java#L19-L61)):
    - Extracts numeric values: `investment`, `balance`, `installment`, `due`.
    - Computes base risk score: `score = 0.15`.
    - Arrears penalty: If `due > 0`, adds `min(0.40, (due / installment) * 0.10)`.
@@ -1133,13 +1133,13 @@ This section documents every single Java class and interface in the LoanLens cod
    - Clamps probability: `probabilityB = Math.max(0.01, Math.min(0.99, score))`.
    - Assigns class: `predictedClass = (probabilityB >= THRESHOLD) ? "B" : "G"`.
    - Builds and returns `PredictionRecord` with `simulated = true`.
-2. `public boolean isAvailable()` ([Lines 64-66](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java#L64-L66)):
+2. `public boolean isAvailable()` ([Lines 64-66](../src/java/com/loanrisk/ml/MockPredictionProvider.java#L64-L66)):
    - Always returns `true`.
-3. `public String getProviderName()` ([Lines 69-71](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java#L69-L71)):
+3. `public String getProviderName()` ([Lines 69-71](../src/java/com/loanrisk/ml/MockPredictionProvider.java#L69-L71)):
    - Returns `"MockPredictionProvider"`.
 
 #### Part D: Dependencies & Collaborators
-- Implements [`PredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java); created by [`PredictionProviderFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java).
+- Implements [`PredictionProvider`](../src/java/com/loanrisk/ml/PredictionProvider.java); created by [`PredictionProviderFactory`](../src/java/com/loanrisk/ml/PredictionProviderFactory.java).
 
 #### Part E: Error Handling & Edge Cases
 - Division by Zero Protection: When computing `installment / (investment / 12)`, guards against zero or negative denominators by defaulting to standard ratios.
@@ -1151,38 +1151,38 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 12. `com.loanrisk.ml.HttpPredictionProvider`
-- **Source File:** [`src/java/com/loanrisk/ml/HttpPredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java)
+- **Source File:** [`src/java/com/loanrisk/ml/HttpPredictionProvider.java`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java)
 - **Total Lines:** 230 lines
 
 #### Part A: Architectural Purpose & Role
-[`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java) is the production polyglot integration bridge. It implements [`PredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java) by serializing loan applications into JSON and dispatching HTTP REST calls to the remote Python/FastAPI microservice using Java 21's standard `java.net.http.HttpClient`.
+[`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java) is the production polyglot integration bridge. It implements [`PredictionProvider`](../src/java/com/loanrisk/ml/PredictionProvider.java) by serializing loan applications into JSON and dispatching HTTP REST calls to the remote Python/FastAPI microservice using Java 21's standard `java.net.http.HttpClient`.
 
 #### Part B: Field-by-Field Breakdown
-- `baseUrl` (`private final String`, [Line 25](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java#L25)): Root endpoint of Python service (e.g. `http://localhost:8000`).
-- `httpClient` (`private final HttpClient`, [Line 26](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java#L26)): Native Java HTTP client instance.
-- `connectTimeout` (`private final Duration`, [Line 27](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java#L27)): Max socket connection duration (3000 ms).
-- `readTimeout` (`private final Duration`, [Line 28](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java#L28)): Max response wait duration (5000 ms).
+- `baseUrl` (`private final String`, [Line 25](../src/java/com/loanrisk/ml/HttpPredictionProvider.java#L25)): Root endpoint of Python service (e.g. `http://localhost:8000`).
+- `httpClient` (`private final HttpClient`, [Line 26](../src/java/com/loanrisk/ml/HttpPredictionProvider.java#L26)): Native Java HTTP client instance.
+- `connectTimeout` (`private final Duration`, [Line 27](../src/java/com/loanrisk/ml/HttpPredictionProvider.java#L27)): Max socket connection duration (3000 ms).
+- `readTimeout` (`private final Duration`, [Line 28](../src/java/com/loanrisk/ml/HttpPredictionProvider.java#L28)): Max response wait duration (5000 ms).
 
 #### Part C: Method-by-Method Breakdown
-1. `public HttpPredictionProvider(String baseUrl, int connectTimeoutMs, int readTimeoutMs)` ([Lines 30-43](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java#L30-L43)):
+1. `public HttpPredictionProvider(String baseUrl, int connectTimeoutMs, int readTimeoutMs)` ([Lines 30-43](../src/java/com/loanrisk/ml/HttpPredictionProvider.java#L30-L43)):
    - Initializes timeouts and instantiates `HttpClient.newBuilder().connectTimeout(connectTimeout).build()`.
-2. `public PredictionRecord predict(LoanApplication application) throws PredictionException` ([Lines 46-118](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java#L46-L118)):
+2. `public PredictionRecord predict(LoanApplication application) throws PredictionException` ([Lines 46-118](../src/java/com/loanrisk/ml/HttpPredictionProvider.java#L46-L118)):
    - Serializes application features into JSON string via `buildRequestBody(application)`.
    - Builds `HttpRequest.newBuilder().uri(URI.create(baseUrl + "/predict")).timeout(readTimeout).header("Content-Type", "application/json").POST(...).build()`.
    - Sends request via `httpClient.send(request, HttpResponse.BodyHandlers.ofString())`.
    - Checks HTTP status: If `status != 200`, throws `PredictionException("HTTP error " + status + ": " + body)`.
    - Parses response body via `parsePredictionResponse(response.body())`.
    - Populates and returns `PredictionRecord` with `simulated = false`.
-3. `public boolean isAvailable()` ([Lines 121-139](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java#L121-L139)):
+3. `public boolean isAvailable()` ([Lines 121-139](../src/java/com/loanrisk/ml/HttpPredictionProvider.java#L121-L139)):
    - Dispatches a quick `GET` request to `baseUrl + "/health"` with 2-second timeout.
    - Returns `true` if response code is `200`, otherwise `false`.
-4. `private String buildRequestBody(LoanApplication app)` ([Lines 141-172](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java#L141-L172)):
+4. `private String buildRequestBody(LoanApplication app)` ([Lines 141-172](../src/java/com/loanrisk/ml/HttpPredictionProvider.java#L141-L172)):
    - Manually constructs JSON payload string with exact Kaggle snake_case keys expected by the Python team.
-5. `private PredictionRecord parsePredictionResponse(String json)` ([Lines 174-222](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java#L174-L222)):
+5. `private PredictionRecord parsePredictionResponse(String json)` ([Lines 174-222](../src/java/com/loanrisk/ml/HttpPredictionProvider.java#L174-L222)):
    - Parses tokens using `JsonUtil.parseFlatJsonObject(json)`; extracts `predicted_class`, `probability_b`, `model_version`, and `threshold_used`.
 
 #### Part D: Dependencies & Collaborators
-- Implements [`PredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java); uses [`JsonUtil`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java); tested extensively by [`HttpPredictionProviderTest`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/HttpPredictionProviderTest.java).
+- Implements [`PredictionProvider`](../src/java/com/loanrisk/ml/PredictionProvider.java); uses [`JsonUtil`](../src/java/com/loanrisk/util/JsonUtil.java); tested extensively by [`HttpPredictionProviderTest`](../test/com/loanrisk/test/HttpPredictionProviderTest.java).
 
 #### Part E: Error Handling & Edge Cases
 - Network Timeouts & Connection Drops: Catches `HttpTimeoutException` and `ConnectException`, converting them into descriptive `PredictionException` instances that preserve root cause details.
@@ -1197,24 +1197,24 @@ This section documents every single Java class and interface in the LoanLens cod
 ## 5.5 Repository & Persistence Subsystem
 
 ### 13. `com.loanrisk.ml.PredictionProviderFactory`
-- **Source File:** [`src/java/com/loanrisk/ml/PredictionProviderFactory.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java)
+- **Source File:** [`src/java/com/loanrisk/ml/PredictionProviderFactory.java`](../src/java/com/loanrisk/ml/PredictionProviderFactory.java)
 - **Total Lines:** 26 lines
 
 #### Part A: Architectural Purpose & Role
-[`PredictionProviderFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java) implements the **Factory Pattern** for the machine learning subsystem. It decouples the creation of prediction providers from the client components ([`LoanApplicationServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java) and [`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java)), inspecting [`MlConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java) to instantiate either [`MockPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java) or [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java).
+[`PredictionProviderFactory`](../src/java/com/loanrisk/ml/PredictionProviderFactory.java) implements the **Factory Pattern** for the machine learning subsystem. It decouples the creation of prediction providers from the client components ([`LoanApplicationServlet`](../src/java/com/loanrisk/web/LoanApplicationServlet.java) and [`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java)), inspecting [`MlConfig`](../src/java/com/loanrisk/config/MlConfig.java) to instantiate either [`MockPredictionProvider`](../src/java/com/loanrisk/ml/MockPredictionProvider.java) or [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java).
 
 #### Part B: Field-by-Field Breakdown
 - No instance or static fields.
 
 #### Part C: Method-by-Method Breakdown
-1. `private PredictionProviderFactory()` ([Line 11](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java#L11)): Private constructor preventing instantiation.
-2. `public static PredictionProvider getProvider()` ([Lines 17-25](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java#L17-L25)):
+1. `private PredictionProviderFactory()` ([Line 11](../src/java/com/loanrisk/ml/PredictionProviderFactory.java#L11)): Private constructor preventing instantiation.
+2. `public static PredictionProvider getProvider()` ([Lines 17-25](../src/java/com/loanrisk/ml/PredictionProviderFactory.java#L17-L25)):
    - Checks `MlConfig.isHttpMode()`.
    - If true, instantiates and returns a new `HttpPredictionProvider(MlConfig.getBaseUrl(), MlConfig.getConnectTimeoutMs(), MlConfig.getReadTimeoutMs())`.
    - If false, instantiates and returns a new `MockPredictionProvider()`.
 
 #### Part D: Dependencies & Collaborators
-- Calls [`MlConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java); instantiates [`MockPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java) or [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java); invoked by [`LoanApplicationServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java) and [`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java).
+- Calls [`MlConfig`](../src/java/com/loanrisk/config/MlConfig.java); instantiates [`MockPredictionProvider`](../src/java/com/loanrisk/ml/MockPredictionProvider.java) or [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java); invoked by [`LoanApplicationServlet`](../src/java/com/loanrisk/web/LoanApplicationServlet.java) and [`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java).
 
 #### Part E: Error Handling & Edge Cases
 - Dynamic Reconfiguration: Because `getProvider()` checks `MlConfig` dynamically on each call, test harnesses can switch modes between test runs without restarting the JVM.
@@ -1226,21 +1226,21 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 14. `com.loanrisk.repository.StorageException`
-- **Source File:** [`src/java/com/loanrisk/repository/StorageException.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/StorageException.java)
+- **Source File:** [`src/java/com/loanrisk/repository/StorageException.java`](../src/java/com/loanrisk/repository/StorageException.java)
 - **Total Lines:** 18 lines
 
 #### Part A: Architectural Purpose & Role
-[`StorageException`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/StorageException.java) is an unchecked runtime exception representing data access failures across all storage implementations (e.g. Oracle SQL syntax errors, database connection loss, sequence exhaustion, constraint violations).
+[`StorageException`](../src/java/com/loanrisk/repository/StorageException.java) is an unchecked runtime exception representing data access failures across all storage implementations (e.g. Oracle SQL syntax errors, database connection loss, sequence exhaustion, constraint violations).
 
 #### Part B: Field-by-Field Breakdown
 - Inherits standard fields from `java.lang.RuntimeException`.
 
 #### Part C: Method-by-Method Breakdown
-1. `public StorageException(String message)` ([Lines 10-12](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/StorageException.java#L10-L12)): Basic message constructor.
-2. `public StorageException(String message, Throwable cause)` ([Lines 14-16](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/StorageException.java#L14-L16)): Chained exception constructor preserving root-cause `SQLException`.
+1. `public StorageException(String message)` ([Lines 10-12](../src/java/com/loanrisk/repository/StorageException.java#L10-L12)): Basic message constructor.
+2. `public StorageException(String message, Throwable cause)` ([Lines 14-16](../src/java/com/loanrisk/repository/StorageException.java#L14-L16)): Chained exception constructor preserving root-cause `SQLException`.
 
 #### Part D: Dependencies & Collaborators
-- Thrown by Oracle and In-Memory repositories; caught by [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) and [`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java).
+- Thrown by Oracle and In-Memory repositories; caught by [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java) and [`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java).
 
 #### Part E: Error Handling & Edge Cases
 - Exception Translation: Repositories catch low-level, checked `SQLException` instances and rethrow unchecked `StorageException` instances, shielding service layers from database technology details.
@@ -1252,23 +1252,23 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 15. `com.loanrisk.repository.LoanApplicationRepository`
-- **Source File:** [`src/java/com/loanrisk/repository/LoanApplicationRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java)
+- **Source File:** [`src/java/com/loanrisk/repository/LoanApplicationRepository.java`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java)
 - **Total Lines:** 39 lines
 
 #### Part A: Architectural Purpose & Role
-[`LoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java) is the **Repository Pattern interface** declaring persistence operations for [`LoanApplication`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java) entities. It provides an in-memory collection-like abstraction for client and service layers.
+[`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java) is the **Repository Pattern interface** declaring persistence operations for [`LoanApplication`](../src/java/com/loanrisk/model/LoanApplication.java) entities. It provides an in-memory collection-like abstraction for client and service layers.
 
 #### Part B: Field-by-Field Breakdown
 - Pure interface; contains no fields.
 
 #### Part C: Method-by-Method Breakdown
-1. `LoanApplication save(LoanApplication application) throws StorageException` ([Line 17](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java#L17)): Persists the application and returns the entity with generated `applicationId`.
-2. `Optional<LoanApplication> findById(Long id) throws StorageException` ([Line 24](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java#L24)): Retrieves an application by ID.
-3. `List<LoanApplication> findAll() throws StorageException` ([Line 31](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java#L31)): Retrieves all applications ordered by submission timestamp descending.
-4. `long count() throws StorageException` ([Line 37](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java#L37)): Returns total number of persisted applications (used for health probes).
+1. `LoanApplication save(LoanApplication application) throws StorageException` ([Line 17](../src/java/com/loanrisk/repository/LoanApplicationRepository.java#L17)): Persists the application and returns the entity with generated `applicationId`.
+2. `Optional<LoanApplication> findById(Long id) throws StorageException` ([Line 24](../src/java/com/loanrisk/repository/LoanApplicationRepository.java#L24)): Retrieves an application by ID.
+3. `List<LoanApplication> findAll() throws StorageException` ([Line 31](../src/java/com/loanrisk/repository/LoanApplicationRepository.java#L31)): Retrieves all applications ordered by submission timestamp descending.
+4. `long count() throws StorageException` ([Line 37](../src/java/com/loanrisk/repository/LoanApplicationRepository.java#L37)): Returns total number of persisted applications (used for health probes).
 
 #### Part D: Dependencies & Collaborators
-- Implemented by [`InMemoryLoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) and [`OracleLoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java); consumed by [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) and [`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java).
+- Implemented by [`InMemoryLoanApplicationRepository`](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) and [`OracleLoanApplicationRepository`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java); consumed by [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java) and [`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java).
 
 #### Part E: Error Handling & Edge Cases
 - Returns `Optional<LoanApplication>` rather than `null` from `findById()`, eliminating `NullPointerException` risks for callers.
@@ -1280,23 +1280,23 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 16. `com.loanrisk.repository.PredictionRecordRepository`
-- **Source File:** [`src/java/com/loanrisk/repository/PredictionRecordRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java)
+- **Source File:** [`src/java/com/loanrisk/repository/PredictionRecordRepository.java`](../src/java/com/loanrisk/repository/PredictionRecordRepository.java)
 - **Total Lines:** 34 lines
 
 #### Part A: Architectural Purpose & Role
-[`PredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java) is the **Repository Pattern interface** declaring persistence operations for [`PredictionRecord`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java) entities, providing lookup capabilities by `applicationId`.
+[`PredictionRecordRepository`](../src/java/com/loanrisk/repository/PredictionRecordRepository.java) is the **Repository Pattern interface** declaring persistence operations for [`PredictionRecord`](../src/java/com/loanrisk/model/PredictionRecord.java) entities, providing lookup capabilities by `applicationId`.
 
 #### Part B: Field-by-Field Breakdown
 - Pure interface; contains no fields.
 
 #### Part C: Method-by-Method Breakdown
-1. `PredictionRecord save(PredictionRecord record) throws StorageException` ([Line 15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java#L15)): Persists the prediction record with generated `predictionId`.
-2. `Optional<PredictionRecord> findByApplicationId(Long applicationId) throws StorageException` ([Line 22](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java#L22)): Finds prediction outcome linked to a loan.
-3. `List<PredictionRecord> findAll() throws StorageException` ([Line 27](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java#L27)): Returns all prediction records.
-4. `long count() throws StorageException` ([Line 32](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java#L32)): Returns total count of predictions.
+1. `PredictionRecord save(PredictionRecord record) throws StorageException` ([Line 15](../src/java/com/loanrisk/repository/PredictionRecordRepository.java#L15)): Persists the prediction record with generated `predictionId`.
+2. `Optional<PredictionRecord> findByApplicationId(Long applicationId) throws StorageException` ([Line 22](../src/java/com/loanrisk/repository/PredictionRecordRepository.java#L22)): Finds prediction outcome linked to a loan.
+3. `List<PredictionRecord> findAll() throws StorageException` ([Line 27](../src/java/com/loanrisk/repository/PredictionRecordRepository.java#L27)): Returns all prediction records.
+4. `long count() throws StorageException` ([Line 32](../src/java/com/loanrisk/repository/PredictionRecordRepository.java#L32)): Returns total count of predictions.
 
 #### Part D: Dependencies & Collaborators
-- Implemented by [`InMemoryPredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java) and [`OraclePredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java); consumed by [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java).
+- Implemented by [`InMemoryPredictionRecordRepository`](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java) and [`OraclePredictionRecordRepository`](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java); consumed by [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java).
 
 #### Part E: Error Handling & Edge Cases
 - One-to-One Foreign Key Lookup: `findByApplicationId()` allows the UI to reconstruct the evaluation details for any previously submitted application.
@@ -1308,31 +1308,31 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 17. `com.loanrisk.repository.RepositoryFactory`
-- **Source File:** [`src/java/com/loanrisk/repository/RepositoryFactory.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java)
+- **Source File:** [`src/java/com/loanrisk/repository/RepositoryFactory.java`](../src/java/com/loanrisk/repository/RepositoryFactory.java)
 - **Total Lines:** 52 lines
 
 #### Part A: Architectural Purpose & Role
-[`RepositoryFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java) is a **Singleton Abstract Factory** managing repository lifecycle. It ensures that in-memory repositories share a single static state across the entire JVM life cycle, while dynamically providing Oracle repository instances when configured.
+[`RepositoryFactory`](../src/java/com/loanrisk/repository/RepositoryFactory.java) is a **Singleton Abstract Factory** managing repository lifecycle. It ensures that in-memory repositories share a single static state across the entire JVM life cycle, while dynamically providing Oracle repository instances when configured.
 
 #### Part B: Field-by-Field Breakdown
-- `inMemoryAppRepo` (`private static final LoanApplicationRepository`, [Line 15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java#L15)): JVM-wide singleton instance of `InMemoryLoanApplicationRepository`.
-- `inMemoryPredRepo` (`private static final PredictionRecordRepository`, [Line 16](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java#L16)): JVM-wide singleton instance of `InMemoryPredictionRecordRepository`.
+- `inMemoryAppRepo` (`private static final LoanApplicationRepository`, [Line 15](../src/java/com/loanrisk/repository/RepositoryFactory.java#L15)): JVM-wide singleton instance of `InMemoryLoanApplicationRepository`.
+- `inMemoryPredRepo` (`private static final PredictionRecordRepository`, [Line 16](../src/java/com/loanrisk/repository/RepositoryFactory.java#L16)): JVM-wide singleton instance of `InMemoryPredictionRecordRepository`.
 
 #### Part C: Method-by-Method Breakdown
-1. `private RepositoryFactory()` ([Line 18](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java#L18)): Private constructor.
-2. `public static LoanApplicationRepository getApplicationRepository()` ([Lines 25-31](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java#L25-L31)):
+1. `private RepositoryFactory()` ([Line 18](../src/java/com/loanrisk/repository/RepositoryFactory.java#L18)): Private constructor.
+2. `public static LoanApplicationRepository getApplicationRepository()` ([Lines 25-31](../src/java/com/loanrisk/repository/RepositoryFactory.java#L25-L31)):
    - Checks `StorageConfig.isOracleMode()`.
    - If true, returns a new `OracleLoanApplicationRepository()`.
    - If false, returns the shared singleton `inMemoryAppRepo`.
-3. `public static PredictionRecordRepository getPredictionRepository()` ([Lines 38-44](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java#L38-L44)):
+3. `public static PredictionRecordRepository getPredictionRepository()` ([Lines 38-44](../src/java/com/loanrisk/repository/RepositoryFactory.java#L38-L44)):
    - Checks `StorageConfig.isOracleMode()`.
    - If true, returns a new `OraclePredictionRecordRepository()`.
    - If false, returns the shared singleton `inMemoryPredRepo`.
-4. `public static void resetInMemoryStorage()` ([Lines 46-51](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java#L46-L51)):
+4. `public static void resetInMemoryStorage()` ([Lines 46-51](../src/java/com/loanrisk/repository/RepositoryFactory.java#L46-L51)):
    - Clears in-memory data structures between unit test executions.
 
 #### Part D: Dependencies & Collaborators
-- Calls [`StorageConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java); instantiates repository classes; invoked by Servlets and test suites.
+- Calls [`StorageConfig`](../src/java/com/loanrisk/config/StorageConfig.java); instantiates repository classes; invoked by Servlets and test suites.
 
 #### Part E: Error Handling & Edge Cases
 - Test Isolation: `resetInMemoryStorage()` enables automated tests to achieve 100% isolation by clearing memory stores between test cases without JVM teardown.
@@ -1344,32 +1344,32 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 18. `com.loanrisk.repository.memory.InMemoryLoanApplicationRepository`
-- **Source File:** [`src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java)
+- **Source File:** [`src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java`](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java)
 - **Total Lines:** 89 lines
 
 #### Part A: Architectural Purpose & Role
-[`InMemoryLoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) provides a thread-safe, lock-free, zero-setup volatile storage implementation of [`LoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java) using Java's high-concurrency memory structures.
+[`InMemoryLoanApplicationRepository`](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) provides a thread-safe, lock-free, zero-setup volatile storage implementation of [`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java) using Java's high-concurrency memory structures.
 
 #### Part B: Field-by-Field Breakdown
-- `store` (`private final Map<Long, LoanApplication>`, [Line 17](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L17)): `ConcurrentHashMap<Long, LoanApplication>` providing thread-safe lock-striped storage.
-- `idSequence` (`private final AtomicLong`, [Line 18](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L18)): `AtomicLong(1000)` generating unique primary keys (1001, 1002, ...).
+- `store` (`private final Map<Long, LoanApplication>`, [Line 17](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L17)): `ConcurrentHashMap<Long, LoanApplication>` providing thread-safe lock-striped storage.
+- `idSequence` (`private final AtomicLong`, [Line 18](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L18)): `AtomicLong(1000)` generating unique primary keys (1001, 1002, ...).
 
 #### Part C: Method-by-Method Breakdown
-1. `public InMemoryLoanApplicationRepository()` ([Line 20](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L20)): Initializes `store` and `idSequence`.
-2. `public LoanApplication save(LoanApplication application)` ([Lines 24-37](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L24-L37)):
+1. `public InMemoryLoanApplicationRepository()` ([Line 20](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L20)): Initializes `store` and `idSequence`.
+2. `public LoanApplication save(LoanApplication application)` ([Lines 24-37](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L24-L37)):
    - Checks nullity. If `application.getApplicationId() == null`, calls `idSequence.incrementAndGet()` to assign a new ID.
    - Saves into `store.put(application.getApplicationId(), copy(application))`. Returns copy.
-3. `public Optional<LoanApplication> findById(Long id)` ([Lines 40-45](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L40-L45)):
+3. `public Optional<LoanApplication> findById(Long id)` ([Lines 40-45](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L40-L45)):
    - Retrieves from map; returns `Optional.ofNullable(copy(app))`.
-4. `public List<LoanApplication> findAll()` ([Lines 48-57](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L48-L57)):
+4. `public List<LoanApplication> findAll()` ([Lines 48-57](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L48-L57)):
    - Streams values, sorts descending by `submissionTimestamp`, maps through defensive copy, and returns list.
-5. `public long count()` ([Lines 60-62](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L60-L62)): Returns `store.size()`.
-6. `public void clear()` ([Lines 65-68](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L65-L68)): Clears `store` and resets sequence to 1000.
-7. `private LoanApplication copy(LoanApplication original)` ([Lines 70-88](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L70-L88)):
+5. `public long count()` ([Lines 60-62](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L60-L62)): Returns `store.size()`.
+6. `public void clear()` ([Lines 65-68](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L65-L68)): Clears `store` and resets sequence to 1000.
+7. `private LoanApplication copy(LoanApplication original)` ([Lines 70-88](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java#L70-L88)):
    - Performs a defensive deep-copy cloning all 12 properties.
 
 #### Part D: Dependencies & Collaborators
-- Implements [`LoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java); managed by [`RepositoryFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java).
+- Implements [`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java); managed by [`RepositoryFactory`](../src/java/com/loanrisk/repository/RepositoryFactory.java).
 
 #### Part E: Error Handling & Edge Cases
 - Defensive Copying: By deep-copying entities on `save()` and `findById()`, external callers cannot mutate stored records by modifying references outside the repository.
@@ -1381,27 +1381,27 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 19. `com.loanrisk.repository.memory.InMemoryPredictionRecordRepository`
-- **Source File:** [`src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java)
+- **Source File:** [`src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java`](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java)
 - **Total Lines:** 81 lines
 
 #### Part A: Architectural Purpose & Role
-[`InMemoryPredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java) provides thread-safe volatile storage for [`PredictionRecord`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java) entities, mapping predictions to applications in memory.
+[`InMemoryPredictionRecordRepository`](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java) provides thread-safe volatile storage for [`PredictionRecord`](../src/java/com/loanrisk/model/PredictionRecord.java) entities, mapping predictions to applications in memory.
 
 #### Part B: Field-by-Field Breakdown
-- `store` (`private final Map<Long, PredictionRecord>`, [Line 16](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L16)): `ConcurrentHashMap<Long, PredictionRecord>`.
-- `idSequence` (`private final AtomicLong`, [Line 17](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L17)): `AtomicLong(5000)` generating IDs starting at 5001.
+- `store` (`private final Map<Long, PredictionRecord>`, [Line 16](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L16)): `ConcurrentHashMap<Long, PredictionRecord>`.
+- `idSequence` (`private final AtomicLong`, [Line 17](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L17)): `AtomicLong(5000)` generating IDs starting at 5001.
 
 #### Part C: Method-by-Method Breakdown
-1. `public InMemoryPredictionRecordRepository()` ([Line 19](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L19)): Constructor.
-2. `public PredictionRecord save(PredictionRecord record)` ([Lines 23-36](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L23-L36)): Assigns sequence ID if null, stores defensive copy in `store`.
-3. `public Optional<PredictionRecord> findByApplicationId(Long appId)` ([Lines 39-46](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L39-L46)): Streams values to match `record.getApplicationId().equals(appId)`.
-4. `public List<PredictionRecord> findAll()` ([Lines 49-53](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L49-L53)): Returns list of copies.
-5. `public long count()` ([Lines 56-58](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L56-L58)): Returns map size.
-6. `public void clear()` ([Lines 61-64](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L61-L64)): Clears map and resets sequence to 5000.
-7. `private PredictionRecord copy(PredictionRecord original)` ([Lines 66-80](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L66-L80)): Clones record fields including `simulated`.
+1. `public InMemoryPredictionRecordRepository()` ([Line 19](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L19)): Constructor.
+2. `public PredictionRecord save(PredictionRecord record)` ([Lines 23-36](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L23-L36)): Assigns sequence ID if null, stores defensive copy in `store`.
+3. `public Optional<PredictionRecord> findByApplicationId(Long appId)` ([Lines 39-46](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L39-L46)): Streams values to match `record.getApplicationId().equals(appId)`.
+4. `public List<PredictionRecord> findAll()` ([Lines 49-53](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L49-L53)): Returns list of copies.
+5. `public long count()` ([Lines 56-58](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L56-L58)): Returns map size.
+6. `public void clear()` ([Lines 61-64](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L61-L64)): Clears map and resets sequence to 5000.
+7. `private PredictionRecord copy(PredictionRecord original)` ([Lines 66-80](../src/java/com/loanrisk/repository/memory/InMemoryPredictionRecordRepository.java#L66-L80)): Clones record fields including `simulated`.
 
 #### Part D: Dependencies & Collaborators
-- Implements [`PredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java); managed by [`RepositoryFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java).
+- Implements [`PredictionRecordRepository`](../src/java/com/loanrisk/repository/PredictionRecordRepository.java); managed by [`RepositoryFactory`](../src/java/com/loanrisk/repository/RepositoryFactory.java).
 
 #### Part E: Error Handling & Edge Cases
 - ID Separation: Generating prediction IDs from 5000 and application IDs from 1000 ensures primary keys never collide, easing debugging during development.
@@ -1413,36 +1413,36 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 20. `com.loanrisk.repository.oracle.OracleLoanApplicationRepository`
-- **Source File:** [`src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java)
+- **Source File:** [`src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java)
 - **Total Lines:** 166 lines
 
 #### Part A: Architectural Purpose & Role
-[`OracleLoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java) implements [`LoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java) using JDBC 4.3 targeting Oracle Database 10g Express Edition. It leverages Oracle sequences and parameterized SQL to guarantee transaction safety and SQL injection immunity.
+[`OracleLoanApplicationRepository`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java) implements [`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java) using JDBC 4.3 targeting Oracle Database 10g Express Edition. It leverages Oracle sequences and parameterized SQL to guarantee transaction safety and SQL injection immunity.
 
 #### Part B: Field-by-Field Breakdown
-- `SEQ_SQL` (`private static final String`, [Line 19](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L19)): `"SELECT LOAN_APPLICATION_SEQ.NEXTVAL FROM DUAL"`.
-- `INSERT_SQL` (`private static final String`, [Lines 21-25](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L21-L25)): SQL INSERT statement binding all 12 columns.
-- `FIND_BY_ID_SQL` (`private static final String`, [Line 27](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L27)): Parameterized SELECT by `APPLICATION_ID`.
-- `FIND_ALL_SQL` (`private static final String`, [Line 29](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L29)): SELECT ordered by `SUBMISSION_TIMESTAMP DESC`.
-- `COUNT_SQL` (`private static final String`, [Line 31](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L31)): `"SELECT COUNT(*) FROM LOAN_APPLICATION"`.
+- `SEQ_SQL` (`private static final String`, [Line 19](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L19)): `"SELECT LOAN_APPLICATION_SEQ.NEXTVAL FROM DUAL"`.
+- `INSERT_SQL` (`private static final String`, [Lines 21-25](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L21-L25)): SQL INSERT statement binding all 12 columns.
+- `FIND_BY_ID_SQL` (`private static final String`, [Line 27](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L27)): Parameterized SELECT by `APPLICATION_ID`.
+- `FIND_ALL_SQL` (`private static final String`, [Line 29](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L29)): SELECT ordered by `SUBMISSION_TIMESTAMP DESC`.
+- `COUNT_SQL` (`private static final String`, [Line 31](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L31)): `"SELECT COUNT(*) FROM LOAN_APPLICATION"`.
 
 #### Part C: Method-by-Method Breakdown
-1. `public LoanApplication save(LoanApplication application) throws StorageException` ([Lines 34-78](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L34-L78)):
+1. `public LoanApplication save(LoanApplication application) throws StorageException` ([Lines 34-78](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L34-L78)):
    - Obtains connection via `DatabaseConfig.getConnection()`.
    - Fetches next sequence value: executes `SEQ_SQL` on `Statement`, reads `rs.getLong(1)`, sets `application.setApplicationId(id)`.
    - Prepares `INSERT_SQL`, binds 12 parameters defensively (`setDouble`, `setString`, `setTimestamp`).
    - Executes `executeUpdate()`. Wraps any `SQLException` in `StorageException`.
-2. `public Optional<LoanApplication> findById(Long id) throws StorageException` ([Lines 81-104](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L81-L104)):
+2. `public Optional<LoanApplication> findById(Long id) throws StorageException` ([Lines 81-104](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L81-L104)):
    - Queries by ID; maps `ResultSet` to `LoanApplication` using `mapRow()`.
-3. `public List<LoanApplication> findAll() throws StorageException` ([Lines 107-126](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L107-L126)):
+3. `public List<LoanApplication> findAll() throws StorageException` ([Lines 107-126](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L107-L126)):
    - Iterates through `ResultSet` and accumulates applications in an `ArrayList`.
-4. `public long count() throws StorageException` ([Lines 129-143](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L129-L143)):
+4. `public long count() throws StorageException` ([Lines 129-143](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L129-L143)):
    - Executes `COUNT_SQL`, returns `rs.getLong(1)`.
-5. `private LoanApplication mapRow(ResultSet rs) throws SQLException` ([Lines 145-165](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L145-L165)):
+5. `private LoanApplication mapRow(ResultSet rs) throws SQLException` ([Lines 145-165](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java#L145-L165)):
    - Maps columns (`APPLICATION_ID`, `INVESTMENT_TOTAL`, etc.) to POJO properties, converting SQL `Timestamp` to `java.time.Instant`.
 
 #### Part D: Dependencies & Collaborators
-- Calls [`DatabaseConfig.getConnection()`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L63); implements [`LoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java).
+- Calls [`DatabaseConfig.getConnection()`](../src/java/com/loanrisk/config/DatabaseConfig.java#L63); implements [`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java).
 
 #### Part E: Error Handling & Edge Cases
 - Resource Leak Prevention: Every method employs Java 7 `try-with-resources` statements across `Connection`, `PreparedStatement`, and `ResultSet`, guaranteeing sockets are closed even when exceptions occur.
@@ -1454,30 +1454,30 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 21. `com.loanrisk.repository.oracle.OraclePredictionRecordRepository`
-- **Source File:** [`src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java)
+- **Source File:** [`src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java`](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java)
 - **Total Lines:** 129 lines
 
 #### Part A: Architectural Purpose & Role
-[`OraclePredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java) manages relational persistence of [`PredictionRecord`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java) entities in Oracle 10g XE using `PREDICTION_RECORD_SEQ`.
+[`OraclePredictionRecordRepository`](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java) manages relational persistence of [`PredictionRecord`](../src/java/com/loanrisk/model/PredictionRecord.java) entities in Oracle 10g XE using `PREDICTION_RECORD_SEQ`.
 
 #### Part B: Field-by-Field Breakdown
-- `SEQ_SQL` (`private static final String`, [Line 18](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L18)): `"SELECT PREDICTION_RECORD_SEQ.NEXTVAL FROM DUAL"`.
-- `INSERT_SQL` (`private static final String`, [Lines 20-23](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L20-L23)): SQL INSERT statement.
-- `FIND_BY_APP_ID_SQL` (`private static final String`, [Line 25](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L25)): SELECT by `APPLICATION_ID`.
-- `FIND_ALL_SQL` (`private static final String`, [Line 27](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L27)): SELECT ordered by `PREDICTION_TIMESTAMP DESC`.
-- `COUNT_SQL` (`private static final String`, [Line 29](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L29)): `"SELECT COUNT(*) FROM PREDICTION_RECORD"`.
+- `SEQ_SQL` (`private static final String`, [Line 18](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L18)): `"SELECT PREDICTION_RECORD_SEQ.NEXTVAL FROM DUAL"`.
+- `INSERT_SQL` (`private static final String`, [Lines 20-23](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L20-L23)): SQL INSERT statement.
+- `FIND_BY_APP_ID_SQL` (`private static final String`, [Line 25](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L25)): SELECT by `APPLICATION_ID`.
+- `FIND_ALL_SQL` (`private static final String`, [Line 27](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L27)): SELECT ordered by `PREDICTION_TIMESTAMP DESC`.
+- `COUNT_SQL` (`private static final String`, [Line 29](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L29)): `"SELECT COUNT(*) FROM PREDICTION_RECORD"`.
 
 #### Part C: Method-by-Method Breakdown
-1. `public PredictionRecord save(PredictionRecord record) throws StorageException` ([Lines 32-68](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L32-L68)):
+1. `public PredictionRecord save(PredictionRecord record) throws StorageException` ([Lines 32-68](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L32-L68)):
    - Fetches ID from `PREDICTION_RECORD_SEQ.NEXTVAL`, executes INSERT, sets `record.setPredictionId(id)`.
-2. `public Optional<PredictionRecord> findByApplicationId(Long appId) throws StorageException` ([Lines 71-92](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L71-L92)):
+2. `public Optional<PredictionRecord> findByApplicationId(Long appId) throws StorageException` ([Lines 71-92](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L71-L92)):
    - Queries by foreign key `APPLICATION_ID`, returns mapped `Optional`.
-3. `public List<PredictionRecord> findAll() throws StorageException` ([Lines 95-114](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L95-L114)): Accumulates records.
-4. `public long count() throws StorageException` ([Lines 117-128](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L117-L128)): Returns count.
+3. `public List<PredictionRecord> findAll() throws StorageException` ([Lines 95-114](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L95-L114)): Accumulates records.
+4. `public long count() throws StorageException` ([Lines 117-128](../src/java/com/loanrisk/repository/oracle/OraclePredictionRecordRepository.java#L117-L128)): Returns count.
 5. `private PredictionRecord mapRow(ResultSet rs) throws SQLException`: Maps columns; calls `record.setSimulated(false)` since Oracle stores live production records.
 
 #### Part D: Dependencies & Collaborators
-- Calls [`DatabaseConfig.getConnection()`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java#L63); implements [`PredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java).
+- Calls [`DatabaseConfig.getConnection()`](../src/java/com/loanrisk/config/DatabaseConfig.java#L63); implements [`PredictionRecordRepository`](../src/java/com/loanrisk/repository/PredictionRecordRepository.java).
 
 #### Part E: Error Handling & Edge Cases
 - Foreign Key Integrity: If `record.getApplicationId()` does not exist in `LOAN_APPLICATION`, Oracle throws an ORA-02291 integrity violation, which is converted to `StorageException`.
@@ -1492,34 +1492,34 @@ This section documents every single Java class and interface in the LoanLens cod
 ## 5.6 Utility Subsystem
 
 ### 22. `com.loanrisk.util.JsonUtil`
-- **Source File:** [`src/java/com/loanrisk/util/JsonUtil.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java)
+- **Source File:** [`src/java/com/loanrisk/util/JsonUtil.java`](../src/java/com/loanrisk/util/JsonUtil.java)
 - **Total Lines:** 165 lines
 
 #### Part A: Architectural Purpose & Role
-[`JsonUtil`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java) is the cornerstone of LoanLens's zero third-party dependency architecture. It provides custom character-scanning JSON parsing for flat object payloads and robust stringification without requiring Jackson, Gson, or fastjson.
+[`JsonUtil`](../src/java/com/loanrisk/util/JsonUtil.java) is the cornerstone of LoanLens's zero third-party dependency architecture. It provides custom character-scanning JSON parsing for flat object payloads and robust stringification without requiring Jackson, Gson, or fastjson.
 
 #### Part B: Field-by-Field Breakdown
 - No static state; pure functional utility.
 
 #### Part C: Method-by-Method Breakdown
-1. `public static Map<String, String> parseFlatJsonObject(String json)` ([Lines 58-125](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java#L58-L125)):
+1. `public static Map<String, String> parseFlatJsonObject(String json)` ([Lines 58-125](../src/java/com/loanrisk/util/JsonUtil.java#L58-L125)):
    - Verifies input starts with `{` and ends with `}`.
    - Iterates character-by-character tracking parser state: searching for keys inside quotes, scanning past colons, and parsing values.
    - Handles quoted string values with escape characters (`\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t`).
    - Handles unquoted literal values (numbers, booleans, `null`) by reading tokens until `,` or `}`.
    - Returns a `Map<String, String>` where all values are represented as raw strings for typed parsing downstream.
-2. `public static String toJson(Object value)` ([Lines 127-145](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java#L127-L145)):
+2. `public static String toJson(Object value)` ([Lines 127-145](../src/java/com/loanrisk/util/JsonUtil.java#L127-L145)):
    - Inspects runtime type:
      - If `null` -> returns `"null"`.
      - If `String` -> escapes and returns in quotes.
      - If `Number` or `Boolean` -> calls `String.valueOf(value)`.
      - If `Map<?, ?>` -> formats as JSON object `{ "k": "v" }`.
      - If `Collection<?>` -> formats as JSON array `[ ... ]`.
-3. `public static String escape(String s)` ([Lines 147-164](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java#L147-L164)):
+3. `public static String escape(String s)` ([Lines 147-164](../src/java/com/loanrisk/util/JsonUtil.java#L147-L164)):
    - Replaces control characters (`\n`, `\r`, `\t`, `"`, `\`) with JSON-compliant escape sequences.
 
 #### Part D: Dependencies & Collaborators
-- Consumed by [`LoanApplicationServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java), [`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java), and [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java).
+- Consumed by [`LoanApplicationServlet`](../src/java/com/loanrisk/web/LoanApplicationServlet.java), [`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java), and [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java).
 
 #### Part E: Error Handling & Edge Cases
 - Malformed Syntax Handling: If curly braces are missing or characters appear outside quotes unexpectedly, throws `IllegalArgumentException("Invalid JSON object...")`.
@@ -1534,27 +1534,27 @@ This section documents every single Java class and interface in the LoanLens cod
 ## 5.7 Web Controller Subsystem
 
 ### 23. `com.loanrisk.web.AppLifecycleListener`
-- **Source File:** [`src/java/com/loanrisk/web/AppLifecycleListener.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/AppLifecycleListener.java)
+- **Source File:** [`src/java/com/loanrisk/web/AppLifecycleListener.java`](../src/java/com/loanrisk/web/AppLifecycleListener.java)
 - **Total Lines:** 41 lines
 
 #### Part A: Architectural Purpose & Role
-[`AppLifecycleListener`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/AppLifecycleListener.java) implements `jakarta.servlet.ServletContextListener` annotated with `@WebListener`. It captures the application startup event in Apache Tomcat, reading initialization parameters from `web.xml` to seed default configuration baselines in [`StorageConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java) and [`MlConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java).
+[`AppLifecycleListener`](../src/java/com/loanrisk/web/AppLifecycleListener.java) implements `jakarta.servlet.ServletContextListener` annotated with `@WebListener`. It captures the application startup event in Apache Tomcat, reading initialization parameters from `web.xml` to seed default configuration baselines in [`StorageConfig`](../src/java/com/loanrisk/config/StorageConfig.java) and [`MlConfig`](../src/java/com/loanrisk/config/MlConfig.java).
 
 #### Part B: Field-by-Field Breakdown
 - No instance fields.
 
 #### Part C: Method-by-Method Breakdown
-1. `public void contextInitialized(ServletContextEvent sce)` ([Lines 18-35](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/AppLifecycleListener.java#L18-L35)):
+1. `public void contextInitialized(ServletContextEvent sce)` ([Lines 18-35](../src/java/com/loanrisk/web/AppLifecycleListener.java#L18-L35)):
    - Obtains `ServletContext`.
    - Reads `LOAN_STORAGE_MODE` context parameter; if non-empty, calls `StorageConfig.setDefaultMode()`.
    - Reads `LOAN_ML_MODE` context parameter; if non-empty, calls `MlConfig.setDefaultMode()`.
    - Reads `LOAN_ML_URL` context parameter; if non-empty, calls `MlConfig.setDefaultBaseUrl()`.
    - Logs startup confirmation to container console.
-2. `public void contextDestroyed(ServletContextEvent sce)` ([Lines 37-40](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/AppLifecycleListener.java#L37-L40)):
+2. `public void contextDestroyed(ServletContextEvent sce)` ([Lines 37-40](../src/java/com/loanrisk/web/AppLifecycleListener.java#L37-L40)):
    - Logs application teardown.
 
 #### Part D: Dependencies & Collaborators
-- Managed by Apache Tomcat container; configures [`StorageConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java) and [`MlConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java).
+- Managed by Apache Tomcat container; configures [`StorageConfig`](../src/java/com/loanrisk/config/StorageConfig.java) and [`MlConfig`](../src/java/com/loanrisk/config/MlConfig.java).
 
 #### Part E: Error Handling & Edge Cases
 - Container Independence: If context parameters are absent, it safely does nothing, allowing system properties or internal defaults to remain active.
@@ -1566,27 +1566,27 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 24. `com.loanrisk.web.HealthServlet`
-- **Source File:** [`src/java/com/loanrisk/web/HealthServlet.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java)
+- **Source File:** [`src/java/com/loanrisk/web/HealthServlet.java`](../src/java/com/loanrisk/web/HealthServlet.java)
 - **Total Lines:** 147 lines
 
 #### Part A: Architectural Purpose & Role
-[`HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java) is mapped to `@WebServlet(name = "HealthServlet", urlPatterns = {"/api/health"})`. It acts as an operational heartbeat and deep health probe, verifying connectivity and readiness across both storage and AI inference subsystems.
+[`HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java) is mapped to `@WebServlet(name = "HealthServlet", urlPatterns = {"/api/health"})`. It acts as an operational heartbeat and deep health probe, verifying connectivity and readiness across both storage and AI inference subsystems.
 
 #### Part B: Field-by-Field Breakdown
-- `applicationRepository` (`private LoanApplicationRepository`, [Line 24](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java#L24)): Storage probe.
-- `predictionProvider` (`private PredictionProvider`, [Line 25](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java#L25)): ML probe.
+- `applicationRepository` (`private LoanApplicationRepository`, [Line 24](../src/java/com/loanrisk/web/HealthServlet.java#L24)): Storage probe.
+- `predictionProvider` (`private PredictionProvider`, [Line 25](../src/java/com/loanrisk/web/HealthServlet.java#L25)): ML probe.
 
 #### Part C: Method-by-Method Breakdown
-1. `public void init() throws ServletException` ([Lines 28-32](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java#L28-L32)):
+1. `public void init() throws ServletException` ([Lines 28-32](../src/java/com/loanrisk/web/HealthServlet.java#L28-L32)):
    - Initializes dependencies via `RepositoryFactory.getApplicationRepository()` and `PredictionProviderFactory.getProvider()`.
-2. `protected void doGet(HttpServletRequest req, HttpServletResponse resp)` ([Lines 35-104](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java#L35-L104)):
+2. `protected void doGet(HttpServletRequest req, HttpServletResponse resp)` ([Lines 35-104](../src/java/com/loanrisk/web/HealthServlet.java#L35-L104)):
    - Probes storage: executes `applicationRepository.count()`. If successful, `storageHealthy = true`.
    - Probes ML: executes `predictionProvider.isAvailable()`.
    - Evaluates system state: if both are healthy, overall status is `"UP"` and HTTP status is `200 OK`. If either is down, status is `"DEGRADED"` or `"DOWN"` and HTTP status is `503 Service Unavailable`.
    - Serializes diagnostic JSON containing storage mode, ML mode, counts, timestamps, and provider details.
 
 #### Part D: Dependencies & Collaborators
-- Calls [`RepositoryFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/RepositoryFactory.java), [`PredictionProviderFactory`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProviderFactory.java), [`JsonUtil`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java); polled by [`app.js`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/js/app.js) and Kubernetes/load balancer probes.
+- Calls [`RepositoryFactory`](../src/java/com/loanrisk/repository/RepositoryFactory.java), [`PredictionProviderFactory`](../src/java/com/loanrisk/ml/PredictionProviderFactory.java), [`JsonUtil`](../src/java/com/loanrisk/util/JsonUtil.java); polled by [`app.js`](../web/js/app.js) and Kubernetes/load balancer probes.
 
 #### Part E: Error Handling & Edge Cases
 - Fail-Safe Isolation: Storage exceptions or socket timeouts during probing are caught locally, preventing the servlet from crashing and ensuring an HTTP 503 JSON payload is cleanly returned.
@@ -1598,26 +1598,26 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 25. `com.loanrisk.web.LoanApplicationServlet`
-- **Source File:** [`src/java/com/loanrisk/web/LoanApplicationServlet.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java)
+- **Source File:** [`src/java/com/loanrisk/web/LoanApplicationServlet.java`](../src/java/com/loanrisk/web/LoanApplicationServlet.java)
 - **Total Lines:** 202 lines
 
 #### Part A: Architectural Purpose & Role
-[`LoanApplicationServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java) is mapped to `@WebServlet(name = "LoanApplicationServlet", urlPatterns = {"/api/applications"})`. It is the primary API gateway controller handling loan evaluation submissions (`POST`) and application audit listings (`GET`).
+[`LoanApplicationServlet`](../src/java/com/loanrisk/web/LoanApplicationServlet.java) is mapped to `@WebServlet(name = "LoanApplicationServlet", urlPatterns = {"/api/applications"})`. It is the primary API gateway controller handling loan evaluation submissions (`POST`) and application audit listings (`GET`).
 
 #### Part B: Field-by-Field Breakdown
-- `loanApplicationService` (`private LoanApplicationService`, [Line 32](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L32)): Service orchestrator.
-- `applicationRepository` (`private LoanApplicationRepository`, [Line 33](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L33)): Storage access.
-- `predictionRepository` (`private PredictionRecordRepository`, [Line 34](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L34)): Prediction access.
+- `loanApplicationService` (`private LoanApplicationService`, [Line 32](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L32)): Service orchestrator.
+- `applicationRepository` (`private LoanApplicationRepository`, [Line 33](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L33)): Storage access.
+- `predictionRepository` (`private PredictionRecordRepository`, [Line 34](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L34)): Prediction access.
 
 #### Part C: Method-by-Method Breakdown
-1. `public void init() throws ServletException` ([Lines 37-52](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L37-L52)):
+1. `public void init() throws ServletException` ([Lines 37-52](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L37-L52)):
    - Injects repositories and ML provider from factories; constructs `LoanApplicationService`.
-2. `protected void doPost(HttpServletRequest req, HttpServletResponse resp)` ([Lines 55-150](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L55-L150)):
+2. `protected void doPost(HttpServletRequest req, HttpServletResponse resp)` ([Lines 55-150](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L55-L150)):
    - Reads request body; rejects empty payloads with HTTP 400.
    - Parses tokens via `JsonUtil.parseFlatJsonObject()`.
    - Binds to `LoanApplication`; delegates to `loanApplicationService.processApplication(app)`.
    - Translates `ApplicationProcessingResult` into HTTP 201, 400, 500, or 502 with serialized JSON.
-3. `protected void doGet(HttpServletRequest req, HttpServletResponse resp)` ([Lines 153-200](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L153-L200)):
+3. `protected void doGet(HttpServletRequest req, HttpServletResponse resp)` ([Lines 153-200](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L153-L200)):
    - Queries `applicationRepository.findAll()`.
    - Iterates applications, pairs with predictions from `predictionRepository.findByApplicationId()`, and emits a JSON array.
 
@@ -1636,24 +1636,24 @@ This section documents every single Java class and interface in the LoanLens cod
 ## 5.8 Test Suite Subsystem
 
 ### 26. `com.loanrisk.test.TestRunner`
-- **Source File:** [`test/com/loanrisk/test/TestRunner.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/TestRunner.java)
+- **Source File:** [`test/com/loanrisk/test/TestRunner.java`](../test/com/loanrisk/test/TestRunner.java)
 - **Total Lines:** 69 lines
 
 #### Part A: Architectural Purpose & Role
-[`TestRunner`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/TestRunner.java) is a custom, zero-dependency unit and integration test runner. It provides a standard `main(String[] args)` entry point executable directly by Ant's `<java>` task, tracking test passes, failures, timings, and printing ANSI terminal output.
+[`TestRunner`](../test/com/loanrisk/test/TestRunner.java) is a custom, zero-dependency unit and integration test runner. It provides a standard `main(String[] args)` entry point executable directly by Ant's `<java>` task, tracking test passes, failures, timings, and printing ANSI terminal output.
 
 #### Part B: Field-by-Field Breakdown
-- `passCount` (`private static int`, [Line 14](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/TestRunner.java#L14)): Total passed assertions.
-- `failCount` (`private static int`, [Line 15](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/TestRunner.java#L15)): Total failed assertions.
+- `passCount` (`private static int`, [Line 14](../test/com/loanrisk/test/TestRunner.java#L14)): Total passed assertions.
+- `failCount` (`private static int`, [Line 15](../test/com/loanrisk/test/TestRunner.java#L15)): Total failed assertions.
 
 #### Part C: Method-by-Method Breakdown
-1. `public static void main(String[] args)` ([Lines 17-54](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/TestRunner.java#L17-L54)):
+1. `public static void main(String[] args)` ([Lines 17-54](../test/com/loanrisk/test/TestRunner.java#L17-L54)):
    - Records start time `System.currentTimeMillis()`.
    - Executes `ConfigurationTest.runTests()`.
    - Executes `HttpPredictionProviderTest.runTests()`.
    - Executes `ApplicationWorkflowTest.runTests()`.
    - Emits a summary banner. If `failCount > 0`, invokes `System.exit(1)` to fail the Ant build.
-2. `public static void check(boolean condition, String description)` ([Lines 56-68](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/TestRunner.java#L56-L68)):
+2. `public static void check(boolean condition, String description)` ([Lines 56-68](../test/com/loanrisk/test/TestRunner.java#L56-L68)):
    - Assertion utility printing `[PASS]` or `[FAIL]` with description.
 
 #### Part D: Dependencies & Collaborators
@@ -1669,23 +1669,23 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 27. `com.loanrisk.test.ConfigurationTest`
-- **Source File:** [`test/com/loanrisk/test/ConfigurationTest.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java)
+- **Source File:** [`test/com/loanrisk/test/ConfigurationTest.java`](../test/com/loanrisk/test/ConfigurationTest.java)
 - **Total Lines:** 172 lines
 
 #### Part A: Architectural Purpose & Role
-[`ConfigurationTest`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java) executes 7 automated test cases verifying that [`StorageConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java), [`MlConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/MlConfig.java), and [`DatabaseConfig`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/DatabaseConfig.java) correctly enforce the 3-tier precedence hierarchy, reject invalid options, and validate remote URLs.
+[`ConfigurationTest`](../test/com/loanrisk/test/ConfigurationTest.java) executes 7 automated test cases verifying that [`StorageConfig`](../src/java/com/loanrisk/config/StorageConfig.java), [`MlConfig`](../src/java/com/loanrisk/config/MlConfig.java), and [`DatabaseConfig`](../src/java/com/loanrisk/config/DatabaseConfig.java) correctly enforce the 3-tier precedence hierarchy, reject invalid options, and validate remote URLs.
 
 #### Part B: Field-by-Field Breakdown
 - No static fields.
 
 #### Part C: Method-by-Method Breakdown
-1. `public static void runTests()` ([Lines 15-38](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java#L15-L38)): Runs all 7 test methods sequentially.
-2. `testStorageModePrecedence()` ([Lines 40-62](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java#L40-L62)): Sets system properties and asserts override of context parameters.
-3. `testStorageModeRejectsInvalid()` ([Lines 64-80](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java#L64-L80)): Confirms `IllegalStateException` on illegal modes.
-4. `testMlModePrecedence()` ([Lines 82-104](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java#L82-L104)): Confirms `http` overrides `mock`.
-5. `testMlModeRejectsInvalid()` ([Lines 106-122](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java#L106-L122)): Confirms rejection of invalid ML modes.
-6. `testMlBaseUrlValidation()` ([Lines 124-145](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java#L124-L145)): Validates rejection of FTP schemes and malformed URLs.
-7. `testDatabaseConfigDefaults()` ([Lines 147-171](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ConfigurationTest.java#L147-L171)): Confirms default Oracle JDBC credentials.
+1. `public static void runTests()` ([Lines 15-38](../test/com/loanrisk/test/ConfigurationTest.java#L15-L38)): Runs all 7 test methods sequentially.
+2. `testStorageModePrecedence()` ([Lines 40-62](../test/com/loanrisk/test/ConfigurationTest.java#L40-L62)): Sets system properties and asserts override of context parameters.
+3. `testStorageModeRejectsInvalid()` ([Lines 64-80](../test/com/loanrisk/test/ConfigurationTest.java#L64-L80)): Confirms `IllegalStateException` on illegal modes.
+4. `testMlModePrecedence()` ([Lines 82-104](../test/com/loanrisk/test/ConfigurationTest.java#L82-L104)): Confirms `http` overrides `mock`.
+5. `testMlModeRejectsInvalid()` ([Lines 106-122](../test/com/loanrisk/test/ConfigurationTest.java#L106-L122)): Confirms rejection of invalid ML modes.
+6. `testMlBaseUrlValidation()` ([Lines 124-145](../test/com/loanrisk/test/ConfigurationTest.java#L124-L145)): Validates rejection of FTP schemes and malformed URLs.
+7. `testDatabaseConfigDefaults()` ([Lines 147-171](../test/com/loanrisk/test/ConfigurationTest.java#L147-L171)): Confirms default Oracle JDBC credentials.
 
 #### Part D: Dependencies & Collaborators
 - Calls `TestRunner.check()`; modifies system properties with cleanup in `finally` blocks.
@@ -1700,18 +1700,18 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 28. `com.loanrisk.test.HttpPredictionProviderTest`
-- **Source File:** [`test/com/loanrisk/test/HttpPredictionProviderTest.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/HttpPredictionProviderTest.java)
+- **Source File:** [`test/com/loanrisk/test/HttpPredictionProviderTest.java`](../test/com/loanrisk/test/HttpPredictionProviderTest.java)
 - **Total Lines:** 276 lines
 
 #### Part A: Architectural Purpose & Role
-[`HttpPredictionProviderTest`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/HttpPredictionProviderTest.java) validates [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java) across 8 integration test scenarios using Java's built-in `com.sun.net.httpserver.HttpServer` to mock the remote Python microservice.
+[`HttpPredictionProviderTest`](../test/com/loanrisk/test/HttpPredictionProviderTest.java) validates [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java) across 8 integration test scenarios using Java's built-in `com.sun.net.httpserver.HttpServer` to mock the remote Python microservice.
 
 #### Part B: Field-by-Field Breakdown
-- `server` (`private static HttpServer`, [Line 24](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/HttpPredictionProviderTest.java#L24)): In-process test HTTP server.
-- `serverPort` (`private static int`, [Line 25](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/HttpPredictionProviderTest.java#L25)): Dynamically allocated ephemeral TCP port.
+- `server` (`private static HttpServer`, [Line 24](../test/com/loanrisk/test/HttpPredictionProviderTest.java#L24)): In-process test HTTP server.
+- `serverPort` (`private static int`, [Line 25](../test/com/loanrisk/test/HttpPredictionProviderTest.java#L25)): Dynamically allocated ephemeral TCP port.
 
 #### Part C: Method-by-Method Breakdown
-1. `public static void runTests()` ([Lines 30-58](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/HttpPredictionProviderTest.java#L30-L58)): Spins up `HttpServer` on port `0`, executes 8 tests, and shuts down the server.
+1. `public static void runTests()` ([Lines 30-58](../test/com/loanrisk/test/HttpPredictionProviderTest.java#L30-L58)): Spins up `HttpServer` on port `0`, executes 8 tests, and shuts down the server.
 2. `testSuccessfulPrediction()`: Tests HTTP 200 JSON parsing.
 3. `testHttp500Error()`: Verifies HTTP 500 throws `PredictionException`.
 4. `testMalformedJsonResponse()`: Verifies invalid JSON throws `PredictionException`.
@@ -1734,17 +1734,17 @@ This section documents every single Java class and interface in the LoanLens cod
 ---
 
 ### 29. `com.loanrisk.test.ApplicationWorkflowTest`
-- **Source File:** [`test/com/loanrisk/test/ApplicationWorkflowTest.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ApplicationWorkflowTest.java)
+- **Source File:** [`test/com/loanrisk/test/ApplicationWorkflowTest.java`](../test/com/loanrisk/test/ApplicationWorkflowTest.java)
 - **Total Lines:** 193 lines
 
 #### Part A: Architectural Purpose & Role
-[`ApplicationWorkflowTest`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ApplicationWorkflowTest.java) executes 7 integration tests exercising the entire [`LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) orchestration workflow in-memory.
+[`ApplicationWorkflowTest`](../test/com/loanrisk/test/ApplicationWorkflowTest.java) executes 7 integration tests exercising the entire [`LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java) orchestration workflow in-memory.
 
 #### Part B: Field-by-Field Breakdown
 - No static fields.
 
 #### Part C: Method-by-Method Breakdown
-1. `public static void runTests()` ([Lines 18-42](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/ApplicationWorkflowTest.java#L18-L42)): Runs all 7 workflow scenarios.
+1. `public static void runTests()` ([Lines 18-42](../test/com/loanrisk/test/ApplicationWorkflowTest.java#L18-L42)): Runs all 7 workflow scenarios.
 2. `testSuccessfulWorkflow()`: Submits valid application, verifies persistence and `SUCCESS` status.
 3. `testValidationFailureMissingFields()`: Submits empty application, verifies `VALIDATION_FAILED`.
 4. `testValidationFailureNegativeValues()`: Submits negative investment amount, verifies validation rejection.
@@ -1774,13 +1774,13 @@ The web controller layer is anchored by two specialized Jakarta Servlets registe
 
 ### 6.1 `HealthServlet` Deep Dive (`/api/health`)
 
-- **Class:** [`com.loanrisk.web.HealthServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java)
+- **Class:** [`com.loanrisk.web.HealthServlet`](../src/java/com/loanrisk/web/HealthServlet.java)
 - **Pattern:** Heartbeat / Deep Diagnostic Probe
 - **HTTP Methods:** `GET`
 - **URL Pattern:** `/api/health`
 
 #### Lifecycle & Initialization
-During servlet initialization ([Lines 28-32](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java#L28-L32)), `HealthServlet.init()` retrieves references to both subsystems:
+During servlet initialization ([Lines 28-32](../src/java/com/loanrisk/web/HealthServlet.java#L28-L32)), `HealthServlet.init()` retrieves references to both subsystems:
 ```java
 @Override
 public void init() throws ServletException {
@@ -1791,7 +1791,7 @@ public void init() throws ServletException {
 Notice that the servlet relies on `RepositoryFactory` and `PredictionProviderFactory`. It does not instantiate implementations directly, allowing the health probe to inspect whichever storage engine and ML adapter are active in configuration.
 
 #### The Probing Algorithm (`doGet`)
-When an HTTP GET request arrives ([Lines 35-104](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java#L35-L104)), `HealthServlet` executes a two-phase active diagnostic probe:
+When an HTTP GET request arrives ([Lines 35-104](../src/java/com/loanrisk/web/HealthServlet.java#L35-L104)), `HealthServlet` executes a two-phase active diagnostic probe:
 
 1. **Storage Health Probe:**
    - Calls `applicationRepository.count()`.
@@ -1813,7 +1813,7 @@ The servlet computes the global health status based on subsystem states:
   - HTTP Status: **`503 Service Unavailable`**
 
 #### Diagnostic JSON Payload Format
-The response payload is assembled using a `LinkedHashMap` to guarantee deterministic key ordering and serialized via [`JsonUtil.toJson()`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java#L127):
+The response payload is assembled using a `LinkedHashMap` to guarantee deterministic key ordering and serialized via [`JsonUtil.toJson()`](../src/java/com/loanrisk/util/JsonUtil.java#L127):
 
 ```json
 {
@@ -1846,13 +1846,13 @@ If the storage is down, the response adapts dynamically:
 
 ### 6.2 `LoanApplicationServlet` Deep Dive (`/api/applications`)
 
-- **Class:** [`com.loanrisk.web.LoanApplicationServlet`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java)
+- **Class:** [`com.loanrisk.web.LoanApplicationServlet`](../src/java/com/loanrisk/web/LoanApplicationServlet.java)
 - **Pattern:** Front Controller / API Gateway
 - **HTTP Methods:** `POST`, `GET`
 - **URL Pattern:** `/api/applications`
 
 #### Request Handling Pipeline (`doPost`)
-The POST endpoint handles loan evaluation submissions through a structured 7-step pipeline ([Lines 55-150](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L55-L150)):
+The POST endpoint handles loan evaluation submissions through a structured 7-step pipeline ([Lines 55-150](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L55-L150)):
 
 1. **Header Negotiation:**
    ```java
@@ -1892,7 +1892,7 @@ The POST endpoint handles loan evaluation submissions through a structured 7-ste
    Serializes the response map to JSON using `JsonUtil.toJson()` and flushes the writer.
 
 #### Listing Applications Pipeline (`doGet`)
-The GET endpoint ([Lines 153-200](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L153-L200)) populates the "Recent Evaluations" ledger:
+The GET endpoint ([Lines 153-200](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L153-L200)) populates the "Recent Evaluations" ledger:
 1. Calls `applicationRepository.findAll()`.
 2. Iterates over each `LoanApplication`.
 3. Calls `predictionRepository.findByApplicationId(app.getApplicationId())` to attach the prediction decision (if one exists).
@@ -1905,7 +1905,7 @@ The GET endpoint ([Lines 153-200](file:///D:/Projects/Loan%20Default%20Risk%20Pr
 
 ### 7.1 Separation of Concerns and Orchestration Logic
 
-The service layer is encapsulated entirely within [`com.loanrisk.service.LoanApplicationService`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java). It acts as the mediator between the web controllers, persistence repositories, and AI scoring engines.
+The service layer is encapsulated entirely within [`com.loanrisk.service.LoanApplicationService`](../src/java/com/loanrisk/service/LoanApplicationService.java). It acts as the mediator between the web controllers, persistence repositories, and AI scoring engines.
 
 #### The Three Core Responsibilities
 1. **Domain Invariant Enforcement:** Validates business constraints before any data touches the database.
@@ -1952,7 +1952,7 @@ If `predictionProvider.predict()` were wrapped inside an active database transac
 
 ### 7.3 Result Object Pattern vs. Exception Flow Control
 
-LoanLens replaces traditional exception-driven control flow with the **Result Object Pattern** via [`ApplicationProcessingResult`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java).
+LoanLens replaces traditional exception-driven control flow with the **Result Object Pattern** via [`ApplicationProcessingResult`](../src/java/com/loanrisk/service/ApplicationProcessingResult.java).
 
 #### Architectural Comparison
 
@@ -1969,7 +1969,7 @@ LoanLens replaces traditional exception-driven control flow with the **Result Ob
 
 ### 8.1 Domain Rules and Mathematical Invariants
 
-Validation is implemented in `LoanApplicationService.validate(LoanApplication app)` ([Lines 125-186](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L125-L186)). It enforces nine mathematical and categorical constraints:
+Validation is implemented in `LoanApplicationService.validate(LoanApplication app)` ([Lines 125-186](../src/java/com/loanrisk/service/LoanApplicationService.java#L125-L186)). It enforces nine mathematical and categorical constraints:
 
 1. **`investmentTotal` (Total Capital Requested):**
    - Invariant: Must not be null.
@@ -2095,7 +2095,7 @@ This conservative threshold maximizes the model's **Recall for defaulting loans*
 
 ### 9.2 The Heuristic Decision Boundary in `MockPredictionProvider`
 
-To allow development, demonstration, and viva examinations to proceed without launching an external Python service, [`MockPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java) implements a deterministic heuristic scoring algorithm ([Lines 19-61](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java#L19-L61)).
+To allow development, demonstration, and viva examinations to proceed without launching an external Python service, [`MockPredictionProvider`](../src/java/com/loanrisk/ml/MockPredictionProvider.java) implements a deterministic heuristic scoring algorithm ([Lines 19-61](../src/java/com/loanrisk/ml/MockPredictionProvider.java#L19-L61)).
 
 #### The Mathematical Formula
 1. **Baseline Inherent Risk:**
@@ -2118,7 +2118,7 @@ To allow development, demonstration, and viva examinations to proceed without la
 
 ### 9.3 Standard Non-Blocking `HttpClient` in `HttpPredictionProvider`
 
-When `LOAN_ML_MODE=http`, LoanLens switches to [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java). It uses Java 21's native `java.net.http.HttpClient` to communicate with the external Python microservice over HTTP REST.
+When `LOAN_ML_MODE=http`, LoanLens switches to [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java). It uses Java 21's native `java.net.http.HttpClient` to communicate with the external Python microservice over HTTP REST.
 
 #### Sequence Diagram: Mock Provider vs. HTTP Provider Execution
 ```mermaid
@@ -2163,7 +2163,7 @@ sequenceDiagram
 
 ### 9.4 Python/FastAPI Microservice Integration Specification
 
-For complete polyglot integration, the remote Python team must conform to the wire specification detailed in [`docs/ml-integration-handoff.md`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/docs/ml-integration-handoff.md).
+For complete polyglot integration, the remote Python team must conform to the wire specification detailed in [`docs/ml-integration-handoff.md`](../docs/ml-integration-handoff.md).
 
 #### Inbound Inference Contract (`POST /predict`)
 - **Headers:** `Content-Type: application/json`
@@ -2230,7 +2230,7 @@ LoanLens overcomes this via its **Pluggable Dual-Storage Strategy**:
 
 ### 10.3 Complete Relational DDL and SQL Query Inventory
 
-The relational schema is defined in [`database/schema.sql`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/database/schema.sql) and executed via Oracle SQL*Plus or SQL Developer.
+The relational schema is defined in [`database/schema.sql`](../database/schema.sql) and executed via Oracle SQL*Plus or SQL Developer.
 
 #### Table DDL: `LOAN_APPLICATION`
 ```sql
@@ -2326,7 +2326,7 @@ CREATE INDEX IDX_PRED_APP_ID ON PREDICTION_RECORD (APPLICATION_ID);
 
 ### 11.1 Structural Anatomy of Model POJOs
 
-The domain model contains two POJOs: [`LoanApplication`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java) and [`PredictionRecord`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java).
+The domain model contains two POJOs: [`LoanApplication`](../src/java/com/loanrisk/model/LoanApplication.java) and [`PredictionRecord`](../src/java/com/loanrisk/model/PredictionRecord.java).
 Both adhere to standard JavaBean specifications:
 - Private member variables.
 - Public no-argument constructor.
@@ -2621,14 +2621,14 @@ Loan_Default_Risk_Prediction.war
 Rather than pulling in JUnit, Jupiter, Hamcrest, or Mockito, LoanLens features a **self-contained, zero-dependency automated test harness** located in `test/com/loanrisk/test/`.
 
 #### How It Works
-- [`TestRunner`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/TestRunner.java) contains the standard Java `main()` method.
+- [`TestRunner`](../test/com/loanrisk/test/TestRunner.java) contains the standard Java `main()` method.
 - When `ant verify` is executed, Ant invokes `TestRunner.main()`.
 - `TestRunner` executes each test suite sequentially in the same JVM process, tracking passes, failures, and execution duration.
 - If all assertions pass, `TestRunner` exits with code `0`. If any assertion fails, it exits with code `1`, immediately breaking the build.
 
 ### 14.2 Mocking HTTP via `com.sun.net.httpserver.HttpServer`
 
-To test [`HttpPredictionProvider`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java) without external network dependencies, [`HttpPredictionProviderTest`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/HttpPredictionProviderTest.java) leverages the JDK's built-in `com.sun.net.httpserver.HttpServer`:
+To test [`HttpPredictionProvider`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java) without external network dependencies, [`HttpPredictionProviderTest`](../test/com/loanrisk/test/HttpPredictionProviderTest.java) leverages the JDK's built-in `com.sun.net.httpserver.HttpServer`:
 - In `setUpServer()`, it binds an HTTP server to `localhost` on port `0` (allowing the operating system to dynamically assign an unused ephemeral port).
 - It creates HTTP context handlers (`/predict` and `/health`).
 - The handlers are dynamically programmed to simulate HTTP 200 OK responses, HTTP 500 internal errors, malformed JSON bodies, and delayed socket responses to trigger timeouts.
@@ -2687,7 +2687,7 @@ A resilient enterprise application is characterized not merely by how it handles
 
 #### Failure Scenario 1: Empty or Whitespace Request Body
 - **Trigger:** Client dispatches a POST request with an empty body or whitespace characters.
-- **Detection Point:** `LoanApplicationServlet.doPost()` ([Lines 68-73](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java#L68-L73)).
+- **Detection Point:** `LoanApplicationServlet.doPost()` ([Lines 68-73](../src/java/com/loanrisk/web/LoanApplicationServlet.java#L68-L73)).
 - **Internal Handling:** Servlet checks `body.trim().isEmpty()`.
 - **HTTP Status Emitted:** **`400 Bad Request`**
 - **Response Payload:** `{"status":"error","message":"Request body cannot be empty"}`
@@ -2696,7 +2696,7 @@ A resilient enterprise application is characterized not merely by how it handles
 
 #### Failure Scenario 2: Syntactically Malformed JSON Body
 - **Trigger:** Inbound body contains truncated JSON, missing curly braces, or illegal characters (e.g. `{ "investmentTotal": 250000 `).
-- **Detection Point:** `JsonUtil.parseFlatJsonObject()` ([Lines 62-65](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java#L62-L65)).
+- **Detection Point:** `JsonUtil.parseFlatJsonObject()` ([Lines 62-65](../src/java/com/loanrisk/util/JsonUtil.java#L62-L65)).
 - **Internal Handling:** Throws `IllegalArgumentException("Invalid JSON object: missing closing brace")`. Caught in `LoanApplicationServlet.doPost()`.
 - **HTTP Status Emitted:** **`400 Bad Request`**
 - **Response Payload:** `{"status":"error","message":"Malformed JSON payload: Invalid JSON object..."}`
@@ -2713,7 +2713,7 @@ A resilient enterprise application is characterized not merely by how it handles
 
 #### Failure Scenario 4: Missing Required Domain Field
 - **Trigger:** Payload is valid JSON but omits a mandatory field (e.g., `infGender` is omitted or null).
-- **Detection Point:** `LoanApplicationService.validate()` ([Lines 150-153](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java#L150-L153)).
+- **Detection Point:** `LoanApplicationService.validate()` ([Lines 150-153](../src/java/com/loanrisk/service/LoanApplicationService.java#L150-L153)).
 - **Internal Handling:** `ValidationResult.addError("Gender is required")` is called. Service returns `ApplicationProcessingResult.validationFailed(vr)`.
 - **HTTP Status Emitted:** **`400 Bad Request`**
 - **Response Payload:** `{"status":"error","errors":["Gender is required"]}`
@@ -2814,7 +2814,7 @@ Thread 2 (User B) ---> LoanApplicationServlet (Singleton) ---> LoanApplicationSe
 ### 16.2 Security Vulnerability Audit
 
 1. **SQL Injection (SQLi) Immunity:**
-   The Oracle persistence layer ([`OracleLoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java)) uses parameterized `java.sql.PreparedStatement` for 100% of queries. Dynamic string concatenation (`"WHERE ID = " + id`) is strictly absent, completely neutralizing SQL injection vectors.
+   The Oracle persistence layer ([`OracleLoanApplicationRepository`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java)) uses parameterized `java.sql.PreparedStatement` for 100% of queries. Dynamic string concatenation (`"WHERE ID = " + id`) is strictly absent, completely neutralizing SQL injection vectors.
 2. **Cross-Site Scripting (XSS) Mitigation:**
    In `app.js`, dynamic DOM updates use `element.textContent = ...` rather than `element.innerHTML = ...` when binding user-controlled strings (e.g. marital status, gender). This prevents malicious JavaScript embedded in input fields from executing in the browser.
 3. **Cross-Site Request Forgery (CSRF):**
@@ -3484,30 +3484,30 @@ To master this codebase deeply enough to explain, modify, and defend it in a tec
 ```
 
 ### Phase 1: Foundations & Domain Model
-1. Study [`LoanApplication.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/LoanApplication.java) and [`PredictionRecord.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/model/PredictionRecord.java). Understand why boxed `Double` is used instead of primitive `double`.
-2. Inspect [`JsonUtil.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/util/JsonUtil.java). Trace how `parseFlatJsonObject()` iterates character-by-character to extract key-value pairs without third-party libraries.
+1. Study [`LoanApplication.java`](../src/java/com/loanrisk/model/LoanApplication.java) and [`PredictionRecord.java`](../src/java/com/loanrisk/model/PredictionRecord.java). Understand why boxed `Double` is used instead of primitive `double`.
+2. Inspect [`JsonUtil.java`](../src/java/com/loanrisk/util/JsonUtil.java). Trace how `parseFlatJsonObject()` iterates character-by-character to extract key-value pairs without third-party libraries.
 - **Exercise:** Write a small scratch test parsing a JSON string with escaped quotes (`"{\"clientType\": \"Co \\\"Ltd\\\"\"}"`) to verify parser state transitions.
 
 ### Phase 2: Configuration & Persistence Architecture
-1. Examine [`StorageConfig.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/config/StorageConfig.java) and understand the 3-tier precedence hierarchy and why silent fallbacks are banned.
-2. Compare [`InMemoryLoanApplicationRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) and [`OracleLoanApplicationRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java).
+1. Examine [`StorageConfig.java`](../src/java/com/loanrisk/config/StorageConfig.java) and understand the 3-tier precedence hierarchy and why silent fallbacks are banned.
+2. Compare [`InMemoryLoanApplicationRepository.java`](../src/java/com/loanrisk/repository/memory/InMemoryLoanApplicationRepository.java) and [`OracleLoanApplicationRepository.java`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java).
 - **Exercise:** Explain how `ConcurrentHashMap` and `AtomicLong` guarantee thread safety without using synchronized methods.
 
 ### Phase 3: Machine Learning Abstraction
-1. Review [`PredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/PredictionProvider.java).
-2. Trace the heuristic calculation in [`MockPredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/MockPredictionProvider.java) step-by-step with pen and paper using the default sample inputs.
-3. Trace [`HttpPredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java) to understand how `java.net.http.HttpClient` configures connect and read timeouts.
+1. Review [`PredictionProvider.java`](../src/java/com/loanrisk/ml/PredictionProvider.java).
+2. Trace the heuristic calculation in [`MockPredictionProvider.java`](../src/java/com/loanrisk/ml/MockPredictionProvider.java) step-by-step with pen and paper using the default sample inputs.
+3. Trace [`HttpPredictionProvider.java`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java) to understand how `java.net.http.HttpClient` configures connect and read timeouts.
 - **Exercise:** Calculate why an applicant with `duePayment = 0` and `accCurrentBalance >= 3 * installSize` receives class `"G"`.
 
 ### Phase 4: Core Service & Web Controllers
-1. Walk through [`LoanApplicationService.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/LoanApplicationService.java) from `validate()` to `save()` to `predict()`.
-2. Study [`ApplicationProcessingResult.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/service/ApplicationProcessingResult.java) to see how discriminated unions eliminate exception overhead.
-3. Inspect [`LoanApplicationServlet.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/LoanApplicationServlet.java) and [`HealthServlet.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/web/HealthServlet.java).
+1. Walk through [`LoanApplicationService.java`](../src/java/com/loanrisk/service/LoanApplicationService.java) from `validate()` to `save()` to `predict()`.
+2. Study [`ApplicationProcessingResult.java`](../src/java/com/loanrisk/service/ApplicationProcessingResult.java) to see how discriminated unions eliminate exception overhead.
+3. Inspect [`LoanApplicationServlet.java`](../src/java/com/loanrisk/web/LoanApplicationServlet.java) and [`HealthServlet.java`](../src/java/com/loanrisk/web/HealthServlet.java).
 - **Exercise:** Trace what happens if `predict()` throws a `PredictionException`. Follow the return path to the HTTP 502 response.
 
 ### Phase 5: Presentation & Automated Testing
-1. Review [`web/js/app.js`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/web/js/app.js) to understand how `fetch()` updates DOM elements, handles HTTP 400/502, and calculates SVG gauge offsets.
-2. Inspect [`TestRunner.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/test/com/loanrisk/test/TestRunner.java) and run `ant test` via command line to see all 22 tests execute in under 600ms.
+1. Review [`web/js/app.js`](../web/js/app.js) to understand how `fetch()` updates DOM elements, handles HTTP 400/502, and calculates SVG gauge offsets.
+2. Inspect [`TestRunner.java`](../test/com/loanrisk/test/TestRunner.java) and run `ant test` via command line to see all 22 tests execute in under 600ms.
 - **Exercise:** Add a new test case in `ApplicationWorkflowTest` verifying that an applicant with negative installment size is rejected.
 
 ---
@@ -3699,11 +3699,11 @@ As a rigorous architectural audit, this section explicitly separates **verified 
 
 #### 2. External Operational Assumptions (Pending Environment Setup)
 - **Live Oracle XE Database:**
-  - The relational DDL schema ([`database/schema.sql`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/database/schema.sql)) and the JDBC implementation ([`OracleLoanApplicationRepository.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java)) are fully written and verified against JDBC 4.3 standards.
+  - The relational DDL schema ([`database/schema.sql`](../database/schema.sql)) and the JDBC implementation ([`OracleLoanApplicationRepository.java`](../src/java/com/loanrisk/repository/oracle/OracleLoanApplicationRepository.java)) are fully written and verified against JDBC 4.3 standards.
   - However, live Oracle connectivity depends on an external Oracle 10g XE database instance being provisioned on port 1521 and the Oracle JDBC driver (`ojdbc11.jar`) being present in Tomcat's `lib/` directory.
 - **Live Python/FastAPI Microservice:**
-  - The HTTP adapter ([`HttpPredictionProvider.java`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/ml/HttpPredictionProvider.java)) is fully implemented and tested against an in-process HTTP mock server.
-  - However, live machine learning predictions in `http` mode depend on the separate Python/FastAPI microservice being launched on port 8000 by the teammate according to the interface contract in [`docs/ml-integration-handoff.md`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/docs/ml-integration-handoff.md).
+  - The HTTP adapter ([`HttpPredictionProvider.java`](../src/java/com/loanrisk/ml/HttpPredictionProvider.java)) is fully implemented and tested against an in-process HTTP mock server.
+  - However, live machine learning predictions in `http` mode depend on the separate Python/FastAPI microservice being launched on port 8000 by the teammate according to the interface contract in [`docs/ml-integration-handoff.md`](../docs/ml-integration-handoff.md).
 
 #### 3. Code Discrepancies & Architectural Nuances
 - **`simulated` Flag in Oracle Schema:**
