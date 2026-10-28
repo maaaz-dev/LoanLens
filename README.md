@@ -312,10 +312,14 @@ The current integration guide also records a separate held-out evaluation with *
 
 ## Documentation
 
-- [Complete architecture and pipeline guide](docs/LOANLENS_COMPLETE_ARCHITECTURE_AND_PIPELINE_GUIDE.md)
+- [Project handover and runbook](HANDOVER.md)
+- [Repository and release-readiness audit](docs/FINAL_AUDIT_REPORT.md)
+- [Active model audit and held-out evaluation caveats](docs/ml-model-audit.md)
+- [Complete architecture and pipeline guide — historical details are clearly labelled](docs/LOANLENS_COMPLETE_ARCHITECTURE_AND_PIPELINE_GUIDE.md)
 - [ML integration handoff](docs/ml-integration-handoff.md)
 - [ML service integration and v2.0 feature contract](docs/ml-service-integration.md)
 - [Student/developer walkthrough](docs/project-walkthrough.md)
+- [Read-only local audit helper](scripts/final-audit.ps1)
 - [Model training and comparison code](ml_service/train_models.py)
 - [Python inference service](ml_service/app/main.py)
 - [Custom preprocessing pipeline](ml_service/app/pipeline.py)
