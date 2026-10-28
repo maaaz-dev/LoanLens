@@ -10,6 +10,7 @@
 [![FastAPI](https://img.shields.io/badge/API-FastAPI-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Model](https://img.shields.io/badge/Model-LightGBM-v2.0-2b7a3d)](https://lightgbm.readthedocs.io/)
 [![Status](https://img.shields.io/badge/Status-Academic%20Prototype-6f42c1)](#limitations-and-responsible-use)
+[![CI](https://github.com/maaaz-dev/loan/actions/workflows/ci.yml/badge.svg)](https://github.com/maaaz-dev/loan/actions/workflows/ci.yml)
 
 </div>
 
@@ -117,7 +118,10 @@ The current metadata identifies B as the positive class and G as the negative cl
 .
 ├── database/
 │   └── schema.sql
+├── .github/workflows/ci.yml # Automated Python, JavaScript and XML checks
 ├── docs/
+│   ├── FINAL_AUDIT_REPORT.md
+│   ├── ml-model-audit.md
 │   ├── LOANLENS_COMPLETE_ARCHITECTURE_AND_PIPELINE_GUIDE.md
 │   ├── ml-integration-handoff.md
 │   ├── ml-service-integration.md
