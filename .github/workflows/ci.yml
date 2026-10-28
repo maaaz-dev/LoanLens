@@ -69,3 +69,32 @@ jobs:
               ET.parse(path)
               print(f"XML OK: {path}")
           PY
+
+  java-tests:
+    name: Java 21 tests on Tomcat 10.1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Apache Ant
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ant
+
+      - name: Install Tomcat API jars for compilation
+        run: |
+          curl --fail --location --retry 3 \
+            https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.61/bin/apache-tomcat-10.1.61.tar.gz \
+            --output "$RUNNER_TEMP/tomcat.tar.gz"
+          mkdir -p "$RUNNER_TEMP/tomcat"
+          tar -xzf "$RUNNER_TEMP/tomcat.tar.gz" -C "$RUNNER_TEMP/tomcat" --strip-components=1
+
+      - name: Compile Java sources and run Java tests
+        run: ant -Dj2ee.server.home="$RUNNER_TEMP/tomcat" test
