@@ -83,11 +83,6 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install Apache Ant
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes ant
-
       - name: Install Tomcat API jars for compilation
         run: |
           curl --fail --location --retry 3 \
@@ -97,4 +92,18 @@ jobs:
           tar -xzf "$RUNNER_TEMP/tomcat.tar.gz" -C "$RUNNER_TEMP/tomcat" --strip-components=1
 
       - name: Compile Java sources and run Java tests
-        run: ant -Dj2ee.server.home="$RUNNER_TEMP/tomcat" test
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/ci/classes build/ci/test-classes
+          TOMCAT_CP="$RUNNER_TEMP/tomcat/lib/*:$RUNNER_TEMP/tomcat/bin/tomcat-juli.jar"
+
+          find src/java -name '*.java' -print0 |
+            xargs -0 javac --release 21 -encoding UTF-8 -cp "$TOMCAT_CP" -d build/ci/classes
+
+          find test -name '*.java' -print0 |
+            xargs -0 javac --release 21 -encoding UTF-8 \
+              -cp "build/ci/classes:$TOMCAT_CP" -d build/ci/test-classes
+
+          java -cp "build/ci/classes:build/ci/test-classes:$TOMCAT_CP" \
+            com.loanrisk.test.TestRunner
