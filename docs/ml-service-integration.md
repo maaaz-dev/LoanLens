@@ -124,8 +124,8 @@ Header: `Content-Type: application/json`
 }
 ```
 
-- `predicted_class`: Strictly `'G'` (Good / Low Default Risk) or `'B'` (Bad / Elevated Default Risk).
-- `probability_b`: Model estimated probability that applicant defaults ($P(\text{Class} = \text{'B'} \mid X)$).
+- `predicted_class`: The class label `G` or `B`. These are dataset labels; neither is independently verified as a real-world lending outcome.
+- `probability_b`: Model-estimated probability assigned to dataset class `B`; it is not a verified real-world default probability.
 - `threshold_used`: Tuned decision threshold applied ($0.4200$).
 - `model_version`: Serialized model release identifier (`v2.0`).
 
@@ -135,11 +135,11 @@ Header: `Content-Type: application/json`
 
 | Feature | Category | Dataset Meaning | Action in v2.0 | Rationale & Architectural Handling |
 | :--- | :--- | :--- | :--- | :--- |
-| `INF_GENDER` | Demographic | Applicant Gender | **REMOVED** | Non-predictive personal attribute; creates fairness and compliance concerns. Removed from UI, Java validation, HTTP serialization, and retrained pipeline. Oracle column made nullable. |
-| `INF_MARITAL_STATUS` | Demographic | Applicant Marital Status | **REMOVED** | Irrelevant personal demographic; creates unnecessary privacy concerns. Removed from active UI and prediction pipeline. Retrained model shows no degradation in ROC-AUC without it. |
+| `INF_GENDER` | Demographic | Applicant gender | **REMOVED FROM ACTIVE MODEL CONTRACT** | Not sent to the v2.0 Python model API. This does not constitute a legal or fairness certification. |
+| `INF_MARITAL_STATUS` | Demographic | Applicant marital status | **REMOVED FROM ACTIVE MODEL CONTRACT** | Not sent to the v2.0 Python model API. Historical Java/schema fields may still exist; check the active UI and provider payload. |
 | `INVESTMENT_TOTAL` | Financial | Requested loan amount | **RETAINED** | Core credit risk parameter. Validated positive numeric. |
 | `ACCCURRENTBALANCE` | Financial | Current deposit balance | **RETAINED** | Financial liquidity indicator. Permitted negative (overdraft). |
-| `INSTALL_SIZE` | Repayment | Installment installment size | **RETAINED** | Payment obligation sizing. Validated positive numeric. |
+| `INSTALL_SIZE` | Repayment | Installment size | **RETAINED** | Payment obligation sizing. A zero value is permitted by the active Python contract. |
 | `DUE_PAYMENT` | Delinquency | Past-due unpaid balance | **RETAINED** | Highest importance feature indicating delinquency. |
 | `COMPENSATION_CHARGED`| Operational | Penalty charges assessed | **RETAINED** | Indicator of historical payment friction. Mapped to canonical `N` / `Y`. |
 | `CLIENT_TYPE` | Geographic | Branch area category | **RETAINED & CORRECTED** | Corrected in UI as "Branch Area Category" with valid options `Rural`, `Semi-urban`, `Urban`. Misleading entity types (`Individual`, `Corporate`) removed. |
@@ -180,9 +180,9 @@ Header: `Content-Type: application/json`
   - Overall Accuracy: `63.38%`
   - Confusion Matrix: TN: `4,077`, FP: `2,574`, FN: `166`, TP: `665`
 
-#### 2. Independent Held-Out Test Evaluation (`test-FIN_ANA_DATA .xls`):
+#### 2. Recorded Independent Held-Out Test Evaluation (source data not included in this repository):
 - Total Binary Samples: `4,305` (Class G: `4,286`, Class B: `19`)
-- Provenance Note: Never used during training, cross-validation, model selection, or threshold tuning.
+- Provenance note in the project audit record: this set was reported as separate from training, validation, model selection and threshold tuning. The raw holdout file is not included in this public source tree, so readers cannot independently reproduce these figures from this checkout.
 - Extreme Imbalance: $99.56\%$ Class G vs $0.44\%$ Class B (only 19 Class B records).
 - Metrics at Frozen Threshold `0.4200`:
   - ROC-AUC: `0.5282`
@@ -195,12 +195,12 @@ Header: `Content-Type: application/json`
 
 ---
 
-## 6. Frontend Synthetic Demo Presets (Verified in Live ML Mode)
+## 6. Recorded Synthetic Demo Presets (re-check before a live demo)
 
-Both sample buttons in `workspace.jsp` / `app.js` have been calibrated against the live v2.0 model:
+The following sample values/results were recorded during a prior local run with the v2.0 service. Re-run the smoke test after changing the model, runtime dependencies or demo presets:
 
 ### Synthetic Example 1 (predicted Class G in the recorded demo)
-- **Inputs**: `INVESTMENT_TOTAL`: 50,000.00, `ACCCURRENTBALANCE`: 28,500.00, `INSTALL_SIZE`: 1,200.00, `DUE_PAYMENT`: 0.00, `COMPENSATION_CHARGED`: `None`, `CLIENT_TYPE`: `Urban`, `REPAY_MODE`: `Normal`.
+- **Synthetic inputs**: `INVESTMENT_TOTAL`: 50,000.00, `ACCCURRENTBALANCE`: 28,500.00, `INSTALL_SIZE`: 1,200.00, `DUE_PAYMENT`: 0.00, `COMPENSATION_CHARGED`: `None`, `CLIENT_TYPE`: `Urban`, `REPAY_MODE`: `Normal`.
 - **Live Model Response**:
   - Predicted Class: `G`
   - Probability B: `1.70%` (`0.016985`)
@@ -208,7 +208,7 @@ Both sample buttons in `workspace.jsp` / `app.js` have been calibrated against t
   - Model Version: `v2.0`
 
 ### Synthetic Example 2 (predicted Class B in the recorded demo)
-- **Inputs**: `INVESTMENT_TOTAL`: 50,000.00, `ACCCURRENTBALANCE`: 0.00, `INSTALL_SIZE`: 1,500.00, `DUE_PAYMENT`: 25,000.00, `COMPENSATION_CHARGED`: `Penalty Charged`, `CLIENT_TYPE`: `Rural`, `REPAY_MODE`: `Installment`.
+- **Synthetic inputs**: `INVESTMENT_TOTAL`: 50,000.00, `ACCCURRENTBALANCE`: 0.00, `INSTALL_SIZE`: 1,500.00, `DUE_PAYMENT`: 25,000.00, `COMPENSATION_CHARGED`: `Penalty Charged`, `CLIENT_TYPE`: `Rural`, `REPAY_MODE`: `Installment`.
 - **Live Model Response**:
   - Predicted Class: `B`
   - Probability B: `53.27%` (`0.532745`)
@@ -229,7 +229,7 @@ cd .
 Or run via dedicated venv:
 
 ```powershell
-cd "E:\College Projects\Loan-Default-Risk-Prediction-copy"
+# Run from the repository root
 & ".\ml_service\.venv\Scripts\python.exe" ml_service/run_server.py
 ```
 
@@ -253,14 +253,14 @@ set "LOAN_ML_BASE_URL=http://127.0.0.1:8000"
 
 ### Step 3: Run Automated Test Suites
 
-**Run Python Tests (22 tests):**
+**Run Python tests:**
 
 ```powershell
-cd "E:\College Projects\Loan-Default-Risk-Prediction-copy"
+# Run from the repository root
 & ".\ml_service\.venv\Scripts\python.exe" -m unittest discover -s ml_service/tests -v
 ```
 
-**Run Java Backend Tests & Build WAR:**
+**Run Java backend tests and WAR verification:**
 
 ```powershell
 & "C:\Tools\apache-ant-1.10.18\bin\ant.bat" -f build.xml `
