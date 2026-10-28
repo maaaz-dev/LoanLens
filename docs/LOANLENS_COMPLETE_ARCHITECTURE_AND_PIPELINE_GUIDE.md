@@ -3,8 +3,11 @@
 > **Document Type:** Master Architectural Specification, Source Code Audit, and Viva Examination Handbook
 > **Target System:** LoanLens — AI-Augmented Loan Default Risk Prediction Engine
 > **Target Audience:** College Computer Science / Information Technology Students, Java Enterprise Developers, Technical Viva Candidates, and Software Architecture Interviewees
-> **Workspace Location:** `D:/Projects/Loan Default Risk Prediction`
-> **Reference Baseline:** Java 21 LTS, Jakarta EE 10 (Servlet 6.0 / JSP 3.1), Apache Tomcat 10.1.57, Oracle 10g XE / In-Memory Dual-Store, Vanilla ES6+ Web Frontend
+> **Workspace Location:** repository root
+> **Reference Baseline:** Historical Java application snapshot; some implementation details and model metrics in this long-form guide may differ from the current code.
+
+> [!NOTE]
+> **Current source of truth (repository snapshot):** Use the root README and [current v2.0 ML service integration guide](ml-service-integration.md) for the active implementation. The current Python inference contract accepts seven non-demographic features, with LightGBM model metadata version v2.0 and a threshold around 0.42. This guide preserves older architectural walkthroughs and historical explanations; its nine-feature, Random Forest, 0.30-threshold and mock-provider examples are not the active Python model contract. Follow the live `/health` and `/model-info` endpoints and checked-in metadata when verifying a local run.
 
 ---
 
@@ -135,7 +138,7 @@ LoanLens is built upon six uncompromising architectural principles:
 1. **Zero External Runtime JAR Dependencies:**
    The entire server-side application compiles and executes with exactly zero third-party JARs in `WEB-INF/lib`. All functionality—JSON parsing, JSON stringification, HTTP networking, mock heuristic evaluation, and automated testing—leverages native Java 21 platform packages (`java.net.http`, `java.util.concurrent`, `java.sql`, `java.lang`) and Jakarta Servlet 6.0 interfaces.
 2. **Pluggable Dual-Storage Strategy:**
-   The persistence layer isolates data storage behind clean repository interfaces ([`LoanApplicationRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/LoanApplicationRepository.java) and [`PredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java)). Through configuration, the application seamlessly toggles between:
+   The persistence layer isolates data storage behind clean repository interfaces ([`LoanApplicationRepository`](../src/java/com/loanrisk/repository/LoanApplicationRepository.java) and [`PredictionRecordRepository`](file:///D:/Projects/Loan%20Default%20Risk%20Prediction/src/java/com/loanrisk/repository/PredictionRecordRepository.java)). Through configuration, the application seamlessly toggles between:
    - **`memory`**: An ultra-fast, zero-setup, thread-safe in-memory store utilizing `ConcurrentHashMap` and `AtomicLong` sequences, allowing developers and evaluators to run the complete suite without external database provisioning.
    - **`oracle`**: An enterprise JDBC persistence implementation targeting Oracle Database 10g Express Edition (XE) using explicit SQL sequences, connection lifecycle management, and transactional boundary handling.
 3. **Decoupled Polyglot AI/ML Bridge:**
